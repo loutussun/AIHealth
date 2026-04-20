@@ -6,11 +6,13 @@ from pathlib import Path
 from typing import Any
 
 from family_doctor.ingest_models import IngestEvent, NormalizedAttachment
+from family_doctor.raw_archive import archive_event_raw_files, should_archive_raw
 from family_doctor.runtime_records import (
     write_dedupe_record,
     write_ingest_job,
     write_review_item,
 )
+from family_doctor.source_pages import write_source_page
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -324,6 +326,41 @@ def _runtime_update(path: Path, entity_type: str, status: str, phase: str | None
     return update
 
 
+def _artifact_entry(
+    path: Path,
+    artifact_type: str,
+    target: Path,
+    **extra: Any,
+) -> dict[str, Any]:
+    artifact: dict[str, Any] = {
+        "artifact_type": artifact_type,
+        "path": str(path),
+        "relative_path": path.relative_to(target).as_posix(),
+    }
+    artifact.update(extra)
+    return artifact
+
+
+def _wiki_update(path: Path, target: Path, source_id: str) -> dict[str, Any]:
+    return {
+        "page_type": "source_page",
+        "path": str(path),
+        "relative_path": path.relative_to(target).as_posix(),
+        "source_id": source_id,
+        "status": "committed",
+    }
+
+
+def _planned_writes(source_kind: str, needs_review: bool) -> list[str]:
+    writes = ["ingest_job"]
+    if should_archive_raw(source_kind):
+        writes.append("raw_archive")
+    writes.append("source_page")
+    if needs_review:
+        writes.append("review_item")
+    return writes
+
+
 def _output_result(
     *,
     status: str,
@@ -351,6 +388,7 @@ def _output_result(
 def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     event = load_event(event_path)
     fingerprint = derive_dedupe_fingerprint(event)
+    source_kind = _classification(event)
     duplicate_kind, duplicate_path, matched_job_id = _find_duplicate(target, event, fingerprint)
 
     if duplicate_path:
@@ -441,12 +479,40 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         event=event,
         phase="accepted",
         status="processing",
-        planned_writes=["ingest_job", "review_item"],
-        completed_writes=[],
+        planned_writes=_planned_writes(
+            source_kind, event.match_confidence < REVIEW_THRESHOLD or event.member_id is None
+        ),
+        completed_writes=["ingest_job"],
         source_id=event.event_id,
         recovery_hint="resume from accepted phase",
     )
     _write_job_fingerprint(initial_job, fingerprint)
+
+    archived_artifacts = archive_event_raw_files(target, event, source_kind)
+    source_page_path = write_source_page(target, event, source_kind, archived_artifacts)
+
+    artifacts = [
+        _artifact_entry(
+            artifact.path,
+            "raw_archive",
+            target,
+            source_kind=source_kind,
+            attachment_id=artifact.attachment_id,
+        )
+        for artifact in archived_artifacts
+    ]
+    artifacts.append(
+        _artifact_entry(source_page_path, "source_page", target, source_id=event.event_id)
+    )
+    wiki_updates = [_wiki_update(source_page_path, target, event.event_id)]
+
+    completed_writes = ["ingest_job"]
+    runtime_updates: list[dict[str, Any]] = []
+    for artifact in archived_artifacts:
+        completed_writes.append("raw_archive")
+        runtime_updates.append(_runtime_update(artifact.path, "raw_archive", "committed"))
+    completed_writes.append("source_page")
+    runtime_updates.append(_runtime_update(source_page_path, "source_page", "committed"))
 
     if event.match_confidence < REVIEW_THRESHOLD or event.member_id is None:
         review_path = write_review_item(
@@ -460,8 +526,8 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             event=event,
             phase="accepted",
             status="pending_review",
-            planned_writes=["ingest_job", "review_item"],
-            completed_writes=["ingest_job", "review_item"],
+            planned_writes=_planned_writes(source_kind, True),
+            completed_writes=[*completed_writes, "review_item"],
             source_id=event.event_id,
             recovery_hint="waiting on human review for member resolution",
         )
@@ -469,9 +535,10 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             status="needs_review",
             summary=f"low-confidence member match for {event.event_id}",
             message="需要人工复核成员匹配后再继续处理。",
-            artifacts=[],
-            wiki_updates=[],
+            artifacts=artifacts,
+            wiki_updates=wiki_updates,
             runtime_updates=[
+                *runtime_updates,
                 _runtime_update(initial_job, "ingest_job", "pending_review", "accepted"),
                 _runtime_update(review_path, "review_item", "committed"),
             ],
@@ -484,8 +551,8 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         event=event,
         phase="committed",
         status="committed",
-        planned_writes=["ingest_job"],
-        completed_writes=["ingest_job"],
+        planned_writes=_planned_writes(source_kind, False),
+        completed_writes=completed_writes,
         source_id=event.event_id,
         recovery_hint=None,
     )
@@ -493,11 +560,14 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
 
     return _output_result(
         status="ok",
-        summary=f"ingest committed for {event.event_id} ({_classification(event)})",
+        summary=f"ingest committed for {event.event_id} ({source_kind})",
         message="已完成摄取处理。",
-        artifacts=[],
-        wiki_updates=[],
-        runtime_updates=[_runtime_update(final_job, "ingest_job", "committed", "committed")],
+        artifacts=artifacts,
+        wiki_updates=wiki_updates,
+        runtime_updates=[
+            *runtime_updates,
+            _runtime_update(final_job, "ingest_job", "committed", "committed"),
+        ],
         evidence_refs=_evidence_refs(event),
         followup_suggestions=[],
     )
