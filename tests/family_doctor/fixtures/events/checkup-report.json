@@ -1,26 +1,43 @@
 {
   "event_id": "evt_checkup_report_001",
+  "request_id": "req_checkup_report_001",
   "idempotency_key": "idem_checkup_report_001",
+  "correlation_id": "corr_checkup_report_001",
+  "causation_id": null,
+  "event_type": "ingest",
+  "trigger_mode": "user_message",
   "occurred_at": "2026-04-20T09:00:00+08:00",
-  "trigger_mode": "manual",
-  "event_type": "report.checkup",
   "actor": {
-    "id": "actor_family_member"
+    "actor_id": "user_admin",
+    "role": "caregiver"
   },
   "target": {
-    "member_hint": "dad"
+    "member_id": "dad",
+    "member_hint": "dad",
+    "match_confidence": 1.0
   },
   "payload": {
+    "text": "爸爸的体检报告",
     "attachments": [
       {
         "attachment_id": "att_checkup_report_001",
         "kind": "report",
-        "path": "tests/family_doctor/fixtures/files/checkup-report.txt"
+        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/checkup-report.txt",
+        "mime_type": "text/plain",
+        "caption": "爸爸体检报告",
+        "source_name": "checkup-report.txt",
+        "content_sha256": "sha256:checkup-report",
+        "attachment_group_id": "grp_checkup_report_001"
       }
-    ]
+    ],
+    "source_refs": []
   },
   "context": {
+    "source": "family-doctor-fixture",
     "locale": "zh-CN",
     "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "dedupe_scope": "family-health"
   }
 }

@@ -1,26 +1,43 @@
 {
   "event_id": "evt_symptom_note_low_confidence_001",
+  "request_id": "req_symptom_note_low_confidence_001",
   "idempotency_key": "idem_symptom_note_low_confidence_001",
+  "correlation_id": "corr_symptom_note_low_confidence_001",
+  "causation_id": null,
+  "event_type": "ingest",
+  "trigger_mode": "user_message",
   "occurred_at": "2026-04-20T10:00:00+08:00",
-  "trigger_mode": "manual",
-  "event_type": "note.symptom",
   "actor": {
-    "id": "actor_family_member"
+    "actor_id": "user_admin",
+    "role": "caregiver"
   },
   "target": {
-    "member_hint": "parent"
+    "member_id": null,
+    "member_hint": "parent",
+    "match_confidence": 0.2
   },
   "payload": {
+    "text": "这个症状看起来像是爸爸或妈妈的描述",
     "attachments": [
       {
         "attachment_id": "att_symptom_note_001",
         "kind": "note",
-        "path": "tests/family_doctor/fixtures/files/symptom-note.txt"
+        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/symptom-note.txt",
+        "mime_type": "text/plain",
+        "caption": "症状备注",
+        "source_name": "symptom-note.txt",
+        "content_sha256": "sha256:symptom-note-001",
+        "attachment_group_id": "grp_symptom_note_001"
       }
-    ]
+    ],
+    "source_refs": []
   },
   "context": {
+    "source": "family-doctor-fixture",
     "locale": "zh-CN",
     "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "dedupe_scope": "family-health"
   }
 }

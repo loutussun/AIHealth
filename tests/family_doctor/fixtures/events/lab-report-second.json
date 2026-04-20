@@ -1,26 +1,43 @@
 {
   "event_id": "evt_lab_report_002",
+  "request_id": "req_lab_report_002",
   "idempotency_key": "idem_lab_report_002",
+  "correlation_id": "corr_lab_report_002",
+  "causation_id": null,
+  "event_type": "ingest",
+  "trigger_mode": "user_message",
   "occurred_at": "2026-04-20T18:45:00+08:00",
-  "trigger_mode": "manual",
-  "event_type": "report.lab",
   "actor": {
-    "id": "actor_family_member"
+    "actor_id": "user_admin",
+    "role": "caregiver"
   },
   "target": {
-    "member_hint": "dad"
+    "member_id": "dad",
+    "member_hint": "dad",
+    "match_confidence": 1.0
   },
   "payload": {
+    "text": "爸爸的化验报告（第二份）",
     "attachments": [
       {
         "attachment_id": "att_lab_report_002",
         "kind": "report",
-        "path": "tests/family_doctor/fixtures/files/lab-report-second.pdf"
+        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/lab-report-second.pdf",
+        "mime_type": "application/pdf",
+        "caption": "爸爸化验报告第二份",
+        "source_name": "lab-report-second.pdf",
+        "content_sha256": "sha256:lab-report-002",
+        "attachment_group_id": "grp_lab_report_002"
       }
-    ]
+    ],
+    "source_refs": []
   },
   "context": {
+    "source": "family-doctor-fixture",
     "locale": "zh-CN",
     "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "dedupe_scope": "family-health"
   }
 }

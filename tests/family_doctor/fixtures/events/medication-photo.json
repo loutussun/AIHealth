@@ -1,26 +1,43 @@
 {
   "event_id": "evt_medication_photo_001",
+  "request_id": "req_medication_photo_001",
   "idempotency_key": "idem_medication_photo_001",
+  "correlation_id": "corr_medication_photo_001",
+  "causation_id": null,
+  "event_type": "ingest",
+  "trigger_mode": "user_message",
   "occurred_at": "2026-04-20T11:00:00+08:00",
-  "trigger_mode": "manual",
-  "event_type": "photo.medication",
   "actor": {
-    "id": "actor_family_member"
+    "actor_id": "user_admin",
+    "role": "caregiver"
   },
   "target": {
-    "member_hint": "mom"
+    "member_id": "mom",
+    "member_hint": "mom",
+    "match_confidence": 1.0
   },
   "payload": {
+    "text": "妈妈的药品照片",
     "attachments": [
       {
         "attachment_id": "att_medication_photo_001",
         "kind": "photo",
-        "path": "tests/family_doctor/fixtures/files/medication-photo.jpg"
+        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/medication-photo.jpg",
+        "mime_type": "image/jpeg",
+        "caption": "妈妈药品照片",
+        "source_name": "medication-photo.jpg",
+        "content_sha256": "sha256:medication-photo-001",
+        "attachment_group_id": "grp_medication_photo_001"
       }
-    ]
+    ],
+    "source_refs": []
   },
   "context": {
+    "source": "family-doctor-fixture",
     "locale": "zh-CN",
     "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "dedupe_scope": "family-health"
   }
 }
