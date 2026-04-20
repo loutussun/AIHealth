@@ -3,6 +3,10 @@
 更新时间：`2026-04-20`  
 适用对象：后续接手的 AI agent、开发者、其他平台执行环境
 
+> 注意：这份文档主要记录 `Phase 0 foundation` 完成时的交接状态。  
+> 如果你要查看**当前最新项目快照**，请优先阅读：
+> [2026-04-20-family-doctor-project-snapshot.md](/Users/loutussun/.codex/worktrees/8402/AIHealth/docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
+
 ## 1. 项目是什么
 
 这个项目的目标，是把 `ai-health-vault` 从“模板 + Prompt starter kit”升级成一个由 `LLM Wiki` 驱动的家庭健康管理系统。

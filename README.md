@@ -19,10 +19,16 @@
 - `bootstrap_vault.py`
 - `validate_phase0.py`
 - Phase 0 自动化测试基线
+- Git / GitHub 基线与 `Phase 0 CI`
+- `Phase 1 ingest MVP` plan
+- `Phase 1 / Task 1` 红测与 fixture 基线
+
+当前进行中：
+
+- `Phase 1 ingest MVP`
 
 当前尚未开始：
 
-- `Phase 1 ingest MVP`
 - query / report / reminder 业务逻辑
 - OCR、即时通讯接入、调度器接入
 
@@ -49,6 +55,8 @@ AIHealth/
   [2026-04-19-family-doctor-phase0-foundation.md](docs/superpowers/plans/2026-04-19-family-doctor-phase0-foundation.md)
 - 当前交接文档：
   [2026-04-20-family-doctor-project-handoff.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-handoff.md)
+- 当前最新快照：
+  [2026-04-20-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
 
 ## 本地验证
 
