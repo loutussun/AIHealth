@@ -13,6 +13,7 @@ from family_doctor.runtime_records import (
     write_review_item,
 )
 from family_doctor.source_pages import write_source_page
+from family_doctor.wiki_updates import apply_wiki_updates
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -586,6 +587,18 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         _artifact_entry(source_page_path, "source_page", target, source_id=event.event_id)
     )
     wiki_updates = [_wiki_update(source_page_path, target, event.event_id)]
+    additional_wiki_updates = apply_wiki_updates(target, event, source_kind, source_page_path)
+    wiki_updates.extend(additional_wiki_updates)
+    for update in additional_wiki_updates:
+        page_path = Path(update["path"])
+        artifacts.append(
+            _artifact_entry(
+                page_path,
+                update["page_type"],
+                target,
+                source_id=update["source_id"],
+            )
+        )
 
     completed_writes = _dedupe_completed_writes(
         "ingest_job", *(["raw_archive"] if archived_artifacts else []), "source_page"
@@ -594,6 +607,10 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     for artifact in archived_artifacts:
         runtime_updates.append(_runtime_update(artifact.path, "raw_archive", "committed"))
     runtime_updates.append(_runtime_update(source_page_path, "source_page", "committed"))
+    for update in additional_wiki_updates:
+        runtime_updates.append(
+            _runtime_update(Path(update["path"]), update["page_type"], update["status"])
+        )
 
     if event.match_confidence < REVIEW_THRESHOLD or event.member_id is None:
         review_path = write_review_item(
