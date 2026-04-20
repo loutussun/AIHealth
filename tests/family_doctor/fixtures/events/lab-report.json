@@ -1,0 +1,26 @@
+{
+  "event_id": "evt_lab_report_001",
+  "idempotency_key": "idem_lab_report_001",
+  "occurred_at": "2026-04-20T08:30:00+08:00",
+  "trigger_mode": "manual",
+  "event_type": "report.lab",
+  "actor": {
+    "id": "actor_family_member"
+  },
+  "target": {
+    "member_hint": "dad"
+  },
+  "payload": {
+    "attachments": [
+      {
+        "attachment_id": "att_lab_report_001",
+        "kind": "report",
+        "path": "tests/family_doctor/fixtures/files/lab-report.pdf"
+      }
+    ]
+  },
+  "context": {
+    "locale": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  }
+}

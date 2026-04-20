@@ -1,0 +1,26 @@
+{
+  "event_id": "evt_symptom_note_low_confidence_001",
+  "idempotency_key": "idem_symptom_note_low_confidence_001",
+  "occurred_at": "2026-04-20T10:00:00+08:00",
+  "trigger_mode": "manual",
+  "event_type": "note.symptom",
+  "actor": {
+    "id": "actor_family_member"
+  },
+  "target": {
+    "member_hint": "parent"
+  },
+  "payload": {
+    "attachments": [
+      {
+        "attachment_id": "att_symptom_note_001",
+        "kind": "note",
+        "path": "tests/family_doctor/fixtures/files/symptom-note.txt"
+      }
+    ]
+  },
+  "context": {
+    "locale": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  }
+}

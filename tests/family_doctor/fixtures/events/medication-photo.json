@@ -1,0 +1,26 @@
+{
+  "event_id": "evt_medication_photo_001",
+  "idempotency_key": "idem_medication_photo_001",
+  "occurred_at": "2026-04-20T11:00:00+08:00",
+  "trigger_mode": "manual",
+  "event_type": "photo.medication",
+  "actor": {
+    "id": "actor_family_member"
+  },
+  "target": {
+    "member_hint": "mom"
+  },
+  "payload": {
+    "attachments": [
+      {
+        "attachment_id": "att_medication_photo_001",
+        "kind": "photo",
+        "path": "tests/family_doctor/fixtures/files/medication-photo.jpg"
+      }
+    ]
+  },
+  "context": {
+    "locale": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  }
+}
