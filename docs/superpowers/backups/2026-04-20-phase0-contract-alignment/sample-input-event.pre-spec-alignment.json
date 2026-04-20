@@ -1,0 +1,32 @@
+{
+  "event_id": "evt_sample_001",
+  "request_id": "req_sample_001",
+  "idempotency_key": "sha256:sample",
+  "correlation_id": "corr_sample_001",
+  "causation_id": null,
+  "event_type": "ingest",
+  "trigger_mode": "user_message",
+  "occurred_at": "2026-04-19T21:30:00+08:00",
+  "actor": {
+    "actor_id": "user_admin",
+    "role": "caregiver"
+  },
+  "target": {
+    "member_id": "dad",
+    "member_hint": "爸爸",
+    "match_confidence": 1.0
+  },
+  "payload": {
+    "text": "这是爸爸的体检报告",
+    "attachments": [],
+    "source_refs": []
+  },
+  "context": {
+    "source": "canonical-sample",
+    "locale": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "dedupe_scope": "family-health"
+  }
+}

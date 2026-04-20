@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0",
+  "entities": {
+    "ingest_job": {
+      "primary_key": "job_id",
+      "statuses": [
+        "created",
+        "processing",
+        "pending_review",
+        "committed",
+        "failed",
+        "aborted"
+      ],
+      "required_fields": [
+        "job_id",
+        "status",
+        "planned_writes",
+        "completed_writes"
+      ],
+      "allowed_transitions": {
+        "created": [
+          "processing",
+          "aborted"
+        ],
+        "processing": [
+          "pending_review",
+          "committed",
+          "failed"
+        ],
+        "pending_review": [
+          "processing",
+          "aborted"
+        ],
+        "failed": [],
+        "committed": [],
+        "aborted": []
+      },
+      "retention": "retain committed jobs for 30d; review and failed jobs until resolved",
+      "log_identity_field": "job_id"
+    },
+    "report_job": {
+      "primary_key": "job_id",
+      "statuses": [
+        "created",
+        "processing",
+        "pending_review",
+        "committed",
+        "failed",
+        "aborted"
+      ],
+      "required_fields": [
+        "job_id",
+        "status",
+        "report_kind",
+        "source_refs"
+      ],
+      "allowed_transitions": {
+        "created": [
+          "processing",
+          "aborted"
+        ],
+        "processing": [
+          "pending_review",
+          "committed",
+          "failed"
+        ],
+        "pending_review": [
+          "processing",
+          "aborted"
+        ],
+        "failed": [],
+        "committed": [],
+        "aborted": []
+      },
+      "retention": "retain committed jobs for 30d; review and failed jobs until resolved",
+      "log_identity_field": "job_id"
+    },
+    "reminder_instance": {
+      "primary_key": "runtime_id",
+      "statuses": [
+        "scheduled",
+        "sent",
+        "confirmed",
+        "escalated",
+        "expired"
+      ],
+      "required_fields": [
+        "runtime_id",
+        "member_id",
+        "item_id",
+        "status",
+        "scheduled_for"
+      ],
+      "allowed_transitions": {
+        "scheduled": [
+          "sent",
+          "expired"
+        ],
+        "sent": [
+          "confirmed",
+          "escalated",
+          "expired"
+        ],
+        "confirmed": [],
+        "escalated": [
+          "confirmed",
+          "expired"
+        ],
+        "expired": []
+      },
+      "retention": "retain for 90d to support adherence summaries",
+      "log_identity_field": "runtime_id"
+    },
+    "review_item": {
+      "primary_key": "review_item_id",
+      "statuses": [
+        "open",
+        "resolved",
+        "dismissed"
+      ],
+      "required_fields": [
+        "review_item_id",
+        "reason",
+        "status",
+        "source_refs"
+      ],
+      "allowed_transitions": {
+        "open": [
+          "resolved",
+          "dismissed"
+        ],
+        "resolved": [],
+        "dismissed": []
+      },
+      "retention": "retain until manually closed, then archive after 30d",
+      "log_identity_field": "review_item_id"
+    },
+    "dedupe_record": {
+      "primary_key": "dedupe_key",
+      "statuses": [
+        "active",
+        "archived"
+      ],
+      "required_fields": [
+        "dedupe_key",
+        "scope",
+        "first_seen_at",
+        "result"
+      ],
+      "allowed_transitions": {
+        "active": [
+          "archived"
+        ],
+        "archived": []
+      },
+      "retention": "retain active for 30d; archived for audit as needed",
+      "log_identity_field": "dedupe_key"
+    }
+  }
+}

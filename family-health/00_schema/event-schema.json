@@ -1,0 +1,336 @@
+{
+  "schema_version": "1.2",
+  "required_top_level_keys": [
+    "event_id",
+    "request_id",
+    "idempotency_key",
+    "correlation_id",
+    "causation_id",
+    "event_type",
+    "trigger_mode",
+    "occurred_at",
+    "actor",
+    "target",
+    "payload",
+    "context",
+    "runtime"
+  ],
+  "allowed_event_types": [
+    "ingest",
+    "query",
+    "report",
+    "reminder"
+  ],
+  "allowed_trigger_modes": [
+    "user_message",
+    "scheduled",
+    "file_drop",
+    "followup"
+  ],
+  "field_shapes": {
+    "event_id": {
+      "type": "string",
+      "nullable": false,
+      "min_length": 1
+    },
+    "request_id": {
+      "type": "string",
+      "nullable": false,
+      "min_length": 1
+    },
+    "idempotency_key": {
+      "type": "string",
+      "nullable": false,
+      "min_length": 1
+    },
+    "correlation_id": {
+      "type": "string",
+      "nullable": false,
+      "min_length": 1
+    },
+    "causation_id": {
+      "type": "string",
+      "nullable": true,
+      "min_length": 1
+    },
+    "event_type": {
+      "type": "string",
+      "nullable": false,
+      "enum": [
+        "ingest",
+        "query",
+        "report",
+        "reminder"
+      ]
+    },
+    "trigger_mode": {
+      "type": "string",
+      "nullable": false,
+      "enum": [
+        "user_message",
+        "scheduled",
+        "file_drop",
+        "followup"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "nullable": false,
+      "format": "rfc3339"
+    },
+    "actor": {
+      "type": "object",
+      "nullable": false,
+      "required_keys": [
+        "actor_id",
+        "role"
+      ],
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "nullable": false,
+          "min_length": 1
+        },
+        "role": {
+          "type": "string",
+          "nullable": false,
+          "enum": [
+            "caregiver",
+            "member",
+            "assistant",
+            "system"
+          ]
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "nullable": false,
+      "required_keys": [
+        "member_hint",
+        "match_confidence"
+      ],
+      "optional_keys": [
+        "member_id"
+      ],
+      "properties": {
+        "member_id": {
+          "type": "string",
+          "nullable": true,
+          "min_length": 1
+        },
+        "member_hint": {
+          "type": "string",
+          "nullable": false,
+          "min_length": 1
+        },
+        "match_confidence": {
+          "type": "number",
+          "nullable": false,
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "nullable": false,
+      "required_keys": [
+        "attachments",
+        "source_refs"
+      ],
+      "optional_keys": [
+        "text",
+        "report_kind",
+        "reminder_action"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "nullable": true,
+          "min_length": 0
+        },
+        "attachments": {
+          "type": "array",
+          "nullable": false,
+          "items": "attachment_shape",
+          "min_items": 0
+        },
+        "source_refs": {
+          "type": "array",
+          "nullable": false,
+          "items": {
+            "type": "string",
+            "nullable": false,
+            "min_length": 1
+          },
+          "min_items": 0
+        },
+        "report_kind": {
+          "type": "string",
+          "nullable": true,
+          "enum": [
+            "checkup_update",
+            "weekly_health_report",
+            "monthly_health_report",
+            "visit_brief"
+          ]
+        },
+        "reminder_action": {
+          "type": "string",
+          "nullable": true,
+          "enum": [
+            "generate",
+            "confirm",
+            "escalate"
+          ]
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "nullable": false,
+      "required_keys": [
+        "source",
+        "locale",
+        "timezone"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "nullable": false,
+          "min_length": 1
+        },
+        "locale": {
+          "type": "string",
+          "nullable": false,
+          "format": "bcp47"
+        },
+        "timezone": {
+          "type": "string",
+          "nullable": false,
+          "format": "iana-timezone"
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "nullable": false,
+      "required_keys": [
+        "dedupe_scope"
+      ],
+      "optional_keys": [
+        "related_runtime_id",
+        "review_item_id"
+      ],
+      "properties": {
+        "related_runtime_id": {
+          "type": "string",
+          "nullable": true,
+          "min_length": 1
+        },
+        "review_item_id": {
+          "type": "string",
+          "nullable": true,
+          "min_length": 1
+        },
+        "dedupe_scope": {
+          "type": "string",
+          "nullable": false,
+          "min_length": 1
+        }
+      }
+    }
+  },
+  "event_type_rules": {
+    "ingest": {
+      "payload_at_least_one_of": [
+        "text",
+        "attachments"
+      ],
+      "target_member_id": "recommended"
+    },
+    "query": {
+      "payload_required_keys": [
+        "text"
+      ]
+    },
+    "report": {
+      "payload_required_keys": [
+        "report_kind"
+      ]
+    },
+    "reminder": {
+      "payload_required_keys": [
+        "reminder_action"
+      ],
+      "confirm_recommended_runtime_keys": [
+        "related_runtime_id"
+      ]
+    }
+  },
+  "attachment_shape": {
+    "type": "object",
+    "nullable": false,
+    "required_keys": [
+      "attachment_id",
+      "kind",
+      "path"
+    ],
+    "optional_keys": [
+      "mime_type",
+      "caption",
+      "source_name",
+      "content_sha256",
+      "attachment_group_id"
+    ],
+    "properties": {
+      "attachment_id": {
+        "type": "string",
+        "nullable": false,
+        "min_length": 1
+      },
+      "kind": {
+        "type": "string",
+        "nullable": false,
+        "enum": [
+          "image",
+          "pdf",
+          "text",
+          "csv",
+          "zip"
+        ]
+      },
+      "path": {
+        "type": "string",
+        "nullable": false,
+        "min_length": 1
+      },
+      "mime_type": {
+        "type": "string",
+        "nullable": true,
+        "min_length": 1
+      },
+      "caption": {
+        "type": "string",
+        "nullable": true,
+        "min_length": 1
+      },
+      "source_name": {
+        "type": "string",
+        "nullable": true,
+        "min_length": 1
+      },
+      "content_sha256": {
+        "type": "string",
+        "nullable": true,
+        "min_length": 1
+      },
+      "attachment_group_id": {
+        "type": "string",
+        "nullable": true,
+        "min_length": 1
+      }
+    }
+  }
+}
