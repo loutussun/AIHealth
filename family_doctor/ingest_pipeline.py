@@ -174,6 +174,41 @@ def _existing_dedupe_records(target: Path) -> list[tuple[Path, dict[str, Any]]]:
     return records
 
 
+def _load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _find_job_record_by_event_id(target: Path, event_id: str) -> tuple[Path, dict[str, Any]] | None:
+    for path, record in _existing_job_records(target):
+        if record.get("event_id") == event_id:
+            return path, record
+    return None
+
+
+def _resolve_duplicate_match(
+    target: Path,
+    duplicate_kind: str | None,
+    duplicate_path: str | None,
+    matched_job_id: str | None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    if duplicate_kind == "ingest_job" and duplicate_path:
+        path = Path(duplicate_path)
+        return path, _load_json(path)
+
+    if matched_job_id:
+        matched = _find_job_record_by_event_id(target, matched_job_id)
+        if matched is not None:
+            return matched
+
+    return None, None
+
+
+def _write_job_fingerprint(job_path: Path, fingerprint: str) -> None:
+    payload = _load_json(job_path)
+    payload["fingerprint"] = fingerprint
+    job_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def _find_duplicate(
     target: Path, event: IngestEvent, fingerprint: str
 ) -> tuple[str | None, str | None, str | None]:
@@ -268,29 +303,91 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     duplicate_kind, duplicate_path, matched_job_id = _find_duplicate(target, event, fingerprint)
 
     if duplicate_path:
+        matched_job_path, matched_job_record = _resolve_duplicate_match(
+            target, duplicate_kind, duplicate_path, matched_job_id
+        )
+        matched_job_status = (
+            matched_job_record.get("status") if isinstance(matched_job_record.get("status"), str) else None
+        )
+        matched_job_phase = (
+            matched_job_record.get("phase") if isinstance(matched_job_record.get("phase"), str) else None
+        )
+        current_status = "pending_review" if matched_job_status == "pending_review" else "committed"
+        current_phase = matched_job_phase or ("accepted" if current_status == "pending_review" else "committed")
+        current_job = write_ingest_job(
+            target=target,
+            event=event,
+            phase="accepted",
+            status="processing",
+            planned_writes=["ingest_job", "dedupe_record"],
+            completed_writes=["ingest_job"],
+            source_id=event.event_id,
+            recovery_hint="duplicate detected; reconcile with matched job",
+        )
+        _write_job_fingerprint(current_job, fingerprint)
         dedupe_path = write_dedupe_record(
             target=target,
             event=event,
             fingerprint=fingerprint,
             matched_job_id=matched_job_id or event.event_id,
         )
+        current_job = write_ingest_job(
+            target=target,
+            event=event,
+            phase=current_phase,
+            status=current_status,
+            planned_writes=["ingest_job", "dedupe_record"],
+            completed_writes=["ingest_job", "dedupe_record"],
+            source_id=matched_job_id or event.event_id,
+            recovery_hint=(
+                "matched duplicate remains pending human review"
+                if current_status == "pending_review"
+                else None
+            ),
+        )
+        _write_job_fingerprint(current_job, fingerprint)
+
+        runtime_updates = []
+        if matched_job_path is not None and matched_job_path != current_job:
+            runtime_updates.append(
+                _runtime_update(
+                    matched_job_path,
+                    "ingest_job",
+                    matched_job_status or "committed",
+                    matched_job_phase,
+                )
+            )
+        elif duplicate_path is not None and duplicate_kind == "dedupe_record":
+            runtime_updates.append(_runtime_update(Path(duplicate_path), "dedupe_record", "committed"))
+
+        runtime_updates.extend(
+            [
+                _runtime_update(current_job, "ingest_job", current_status, current_phase),
+                _runtime_update(dedupe_path, "dedupe_record", "committed"),
+            ]
+        )
+
         return _output_result(
-            status="ok",
-            summary=f"deduplicated ingest event {event.event_id}",
-            message="已识别为重复输入，未重复处理。",
+            status="needs_review" if current_status == "pending_review" else "ok",
+            summary=(
+                f"deduplicated ingest event {event.event_id}; matched job still pending review"
+                if current_status == "pending_review"
+                else f"deduplicated ingest event {event.event_id}"
+            ),
+            message=(
+                "已识别为重复输入，关联任务仍需人工复核。"
+                if current_status == "pending_review"
+                else "已识别为重复输入，未重复处理。"
+            ),
             artifacts=[],
             wiki_updates=[],
-            runtime_updates=[
-                _runtime_update(
-                    Path(duplicate_path),
-                    duplicate_kind or "ingest_job",
-                    "committed",
-                    "committed" if duplicate_kind == "ingest_job" else None,
-                ),
-                _runtime_update(dedupe_path, "dedupe_record", "committed"),
-            ],
+            runtime_updates=runtime_updates,
             evidence_refs=_evidence_refs(event),
-            followup_suggestions=[],
+            followup_suggestions=(
+                ["等待已命中的复核任务完成后再继续处理。"]
+                if current_status == "pending_review"
+                else []
+            ),
         )
 
     initial_job = write_ingest_job(
@@ -303,6 +400,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         source_id=event.event_id,
         recovery_hint="resume from accepted phase",
     )
+    _write_job_fingerprint(initial_job, fingerprint)
 
     if event.match_confidence < REVIEW_THRESHOLD or event.member_id is None:
         review_path = write_review_item(
@@ -345,9 +443,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         source_id=event.event_id,
         recovery_hint=None,
     )
-    final_payload = json.loads(final_job.read_text(encoding="utf-8"))
-    final_payload["fingerprint"] = fingerprint
-    final_job.write_text(json.dumps(final_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_job_fingerprint(final_job, fingerprint)
 
     return _output_result(
         status="ok",
