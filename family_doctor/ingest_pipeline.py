@@ -407,7 +407,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
                 _runtime_update(
                     matched_job_path,
                     "ingest_job",
-                    matched_job_status or "committed",
+                    matched_job_status or current_status,
                     matched_job_phase,
                 )
             )
