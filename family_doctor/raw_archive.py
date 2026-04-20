@@ -65,7 +65,7 @@ def archive_event_raw_files(target: Path, event: IngestEvent, source_kind: str) 
             ArchivedArtifact(
                 attachment_id=attachment.attachment_id,
                 path=archived_path,
-                relative_path=archived_path.relative_to(target).as_posix(),
+                relative_path=archived_path.relative_to(target.resolve()).as_posix(),
             )
         )
 

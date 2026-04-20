@@ -194,6 +194,14 @@ def test_path_like_event_and_attachment_ids_stay_within_vault(run_bootstrap, tmp
         next(artifact["path"] for artifact in result["artifacts"] if artifact["artifact_type"] == "raw_archive")
     ).resolve()
     assert raw_path.is_relative_to((target / "01_raw" / "labs").resolve())
+    runtime_paths = [
+        Path(update["path"]).resolve()
+        for update in result["runtime_updates"]
+        if update["entity_type"] in {"ingest_job", "dedupe_record", "review_item"}
+    ]
+    assert runtime_paths
+    for runtime_path in runtime_paths:
+        assert runtime_path.is_relative_to((target / "99_runtime").resolve())
 
 
 def test_source_page_failure_leaves_archived_raw_checkpoint(monkeypatch, run_bootstrap, tmp_path):

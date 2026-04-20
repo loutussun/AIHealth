@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from family_doctor.ingest_models import IngestEvent
+from family_doctor.raw_archive import _assert_within_root, _safe_name
 
 
 def _utc_now() -> str:
@@ -22,11 +23,15 @@ def _runtime_root(target: Path) -> Path:
 
 
 def _job_path(target: Path, event: IngestEvent) -> Path:
-    return _runtime_root(target) / "jobs" / f"ingest_job_{event.event_id}.json"
+    jobs_root = _runtime_root(target) / "jobs"
+    filename = f"ingest_job_{_safe_name(event.event_id)}.json"
+    return _assert_within_root(jobs_root / filename, jobs_root)
 
 
 def _state_path(target: Path, prefix: str, event: IngestEvent) -> Path:
-    return _runtime_root(target) / "state" / f"{prefix}_{event.event_id}.json"
+    state_root = _runtime_root(target) / "state"
+    filename = f"{prefix}_{_safe_name(event.event_id)}.json"
+    return _assert_within_root(state_root / filename, state_root)
 
 
 def _load_existing_json(path: Path) -> dict[str, Any] | None:
@@ -128,4 +133,3 @@ def serialise_event(event: IngestEvent) -> dict[str, Any]:
     for attachment in payload["attachments"]:
         attachment["path"] = str(attachment["path"])
     return payload
-
