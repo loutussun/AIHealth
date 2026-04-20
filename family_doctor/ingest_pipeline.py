@@ -213,18 +213,55 @@ def _find_duplicate(
     target: Path, event: IngestEvent, fingerprint: str
 ) -> tuple[str | None, str | None, str | None]:
     for path, record in _existing_dedupe_records(target):
-        if record.get("fingerprint") == fingerprint or record.get("idempotency_key") == event.idempotency_key:
+        if record.get("fingerprint") == fingerprint:
             matched_job_id = (
                 record.get("matched_job_id") if isinstance(record.get("matched_job_id"), str) else None
             )
             return "dedupe_record", str(path), matched_job_id
 
     for path, record in _existing_job_records(target):
-        if record.get("fingerprint") == fingerprint or record.get("idempotency_key") == event.idempotency_key:
+        if record.get("fingerprint") == fingerprint:
             matched_job_id = record.get("event_id") if isinstance(record.get("event_id"), str) else event.event_id
             return "ingest_job", str(path), matched_job_id
 
     return None, None, None
+
+
+def _duplicate_result_details(
+    matched_job_status: str | None, matched_job_phase: str | None
+) -> tuple[str, str, str, str, str, list[str], str | None]:
+    if matched_job_status == "pending_review":
+        return (
+            "pending_review",
+            matched_job_phase or "accepted",
+            "needs_review",
+            "matched job still pending review",
+            "已识别为重复输入，关联任务仍需人工复核。",
+            ["等待已命中的复核任务完成后再继续处理。"],
+            "matched duplicate remains pending human review",
+        )
+
+    if matched_job_status in {"created", "processing"}:
+        in_flight_status = matched_job_status
+        return (
+            in_flight_status,
+            matched_job_phase or "accepted",
+            "ok",
+            f"matched job still {in_flight_status}",
+            "已识别为重复输入，关联任务仍在处理中。",
+            ["等待已命中的任务完成后再继续处理。"],
+            "matched duplicate is still in flight",
+        )
+
+    return (
+        "committed",
+        matched_job_phase or "committed",
+        "ok",
+        "",
+        "已识别为重复输入，未重复处理。",
+        [],
+        None,
+    )
 
 
 def _classification(event: IngestEvent) -> str:
@@ -312,8 +349,15 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         matched_job_phase = (
             matched_job_record.get("phase") if isinstance(matched_job_record.get("phase"), str) else None
         )
-        current_status = "pending_review" if matched_job_status == "pending_review" else "committed"
-        current_phase = matched_job_phase or ("accepted" if current_status == "pending_review" else "committed")
+        (
+            current_status,
+            current_phase,
+            result_status,
+            summary_suffix,
+            message,
+            followup_suggestions,
+            recovery_hint,
+        ) = _duplicate_result_details(matched_job_status, matched_job_phase)
         current_job = write_ingest_job(
             target=target,
             event=event,
@@ -339,11 +383,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             planned_writes=["ingest_job", "dedupe_record"],
             completed_writes=["ingest_job", "dedupe_record"],
             source_id=matched_job_id or event.event_id,
-            recovery_hint=(
-                "matched duplicate remains pending human review"
-                if current_status == "pending_review"
-                else None
-            ),
+            recovery_hint=recovery_hint,
         )
         _write_job_fingerprint(current_job, fingerprint)
 
@@ -368,26 +408,18 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         )
 
         return _output_result(
-            status="needs_review" if current_status == "pending_review" else "ok",
+            status=result_status,
             summary=(
-                f"deduplicated ingest event {event.event_id}; matched job still pending review"
-                if current_status == "pending_review"
+                f"deduplicated ingest event {event.event_id}; {summary_suffix}"
+                if summary_suffix
                 else f"deduplicated ingest event {event.event_id}"
             ),
-            message=(
-                "已识别为重复输入，关联任务仍需人工复核。"
-                if current_status == "pending_review"
-                else "已识别为重复输入，未重复处理。"
-            ),
+            message=message,
             artifacts=[],
             wiki_updates=[],
             runtime_updates=runtime_updates,
             evidence_refs=_evidence_refs(event),
-            followup_suggestions=(
-                ["等待已命中的复核任务完成后再继续处理。"]
-                if current_status == "pending_review"
-                else []
-            ),
+            followup_suggestions=followup_suggestions,
         )
 
     initial_job = write_ingest_job(

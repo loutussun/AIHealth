@@ -1,7 +1,12 @@
 import json
 from pathlib import Path
 
-from family_doctor.ingest_pipeline import load_event, run_ingest_pipeline
+from family_doctor.ingest_pipeline import (
+    derive_dedupe_fingerprint,
+    load_event,
+    run_ingest_pipeline,
+)
+from family_doctor.runtime_records import write_ingest_job
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -142,3 +147,89 @@ def test_run_ingest_creates_current_job_for_new_event_with_same_idempotency_key(
         )
     )
     assert dedupe_record["matched_job_id"] == "evt_checkup_report_001"
+
+
+def test_run_ingest_same_idempotency_key_but_different_fingerprint_does_not_dedupe(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    shared_idempotency_key = "idem_shared_ingest_001"
+    first_event = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_shared_001",
+        idempotency_key=shared_idempotency_key,
+    )
+    second_event = _materialize_event(
+        tmp_path,
+        "medication-photo.json",
+        event_id="evt_medication_photo_shared_001",
+        idempotency_key=shared_idempotency_key,
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    first = run_ingest_pipeline(first_event, target)
+    second = run_ingest_pipeline(second_event, target)
+
+    assert first["status"] == "ok"
+    assert second["status"] == "ok"
+    assert "deduplicated" not in second["summary"].lower()
+    assert len(list((target / "99_runtime" / "jobs").glob("ingest_job_*.json"))) == 2
+    assert len(list((target / "99_runtime" / "state").glob("dedupe_record_*.json"))) == 0
+
+    second_job = json.loads(
+        (target / "99_runtime" / "jobs" / "ingest_job_evt_medication_photo_shared_001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert second_job["status"] == "committed"
+    assert second_job["phase"] == "committed"
+
+
+def test_run_ingest_duplicate_of_processing_job_stays_in_flight(run_bootstrap, tmp_path):
+    target = tmp_path / "family-health"
+    first_event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_processing_001",
+    )
+    duplicate_event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_processing_002",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    first_event = load_event(first_event_path)
+    first_job = write_ingest_job(
+        target=target,
+        event=first_event,
+        phase="accepted",
+        status="processing",
+        planned_writes=["ingest_job", "review_item"],
+        completed_writes=["ingest_job"],
+        source_id=first_event.event_id,
+        recovery_hint="resume from accepted phase",
+    )
+    first_job_payload = json.loads(first_job.read_text(encoding="utf-8"))
+    first_job_payload["fingerprint"] = derive_dedupe_fingerprint(first_event)
+    first_job.write_text(json.dumps(first_job_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    result = run_ingest_pipeline(duplicate_event_path, target)
+
+    assert result["status"] == "ok"
+    assert "deduplicated" in result["summary"].lower()
+    assert "still processing" in result["summary"].lower()
+
+    duplicate_job = json.loads(
+        (target / "99_runtime" / "jobs" / "ingest_job_evt_checkup_report_processing_002.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert duplicate_job["status"] == "processing"
+    assert duplicate_job["phase"] == "accepted"
+    assert duplicate_job["completed_writes"] == ["ingest_job", "dedupe_record"]
+
+    persisted_first_job = json.loads(first_job.read_text(encoding="utf-8"))
+    assert persisted_first_job["status"] == "processing"
+    assert persisted_first_job["phase"] == "accepted"
