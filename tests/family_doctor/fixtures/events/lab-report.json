@@ -21,8 +21,8 @@
     "attachments": [
       {
         "attachment_id": "att_lab_report_001",
-        "kind": "report",
-        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/lab-report.pdf",
+        "kind": "pdf",
+        "path": "tests/family_doctor/fixtures/files/lab-report.pdf",
         "mime_type": "application/pdf",
         "caption": "爸爸化验报告",
         "source_name": "lab-report.pdf",

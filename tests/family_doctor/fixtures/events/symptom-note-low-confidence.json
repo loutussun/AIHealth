@@ -21,8 +21,8 @@
     "attachments": [
       {
         "attachment_id": "att_symptom_note_001",
-        "kind": "note",
-        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/symptom-note.txt",
+        "kind": "text",
+        "path": "tests/family_doctor/fixtures/files/symptom-note.txt",
         "mime_type": "text/plain",
         "caption": "症状备注",
         "source_name": "symptom-note.txt",

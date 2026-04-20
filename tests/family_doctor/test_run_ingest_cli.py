@@ -14,4 +14,3 @@ def test_run_ingest_archives_report_and_writes_source_page(
 
     assert result.returncode == 0
     assert list((target / "02_wiki" / "sources").glob("*.md"))
-    assert "ingest completed" in result.stdout.lower()

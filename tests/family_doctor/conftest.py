@@ -1,6 +1,8 @@
+import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -25,12 +27,24 @@ def run_bootstrap():
 @pytest.fixture
 def run_ingest():
     def _run_ingest(event_path: Path, target: Path):
+        raw_event = json.loads(event_path.read_text(encoding="utf-8"))
+        for attachment in raw_event.get("payload", {}).get("attachments", []):
+            attachment_path = Path(attachment["path"])
+            if not attachment_path.is_absolute():
+                attachment["path"] = str((ROOT / attachment_path).resolve())
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as temp_event:
+            json.dump(raw_event, temp_event, ensure_ascii=False, indent=2)
+            temp_event_path = Path(temp_event.name)
+
         return subprocess.run(
             [
                 sys.executable,
                 str(INGEST),
                 "--event",
-                str(event_path),
+                str(temp_event_path),
                 "--target",
                 str(target),
             ],

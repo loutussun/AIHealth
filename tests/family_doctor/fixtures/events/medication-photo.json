@@ -21,8 +21,8 @@
     "attachments": [
       {
         "attachment_id": "att_medication_photo_001",
-        "kind": "photo",
-        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/medication-photo.jpg",
+        "kind": "image",
+        "path": "tests/family_doctor/fixtures/files/medication-photo.jpg",
         "mime_type": "image/jpeg",
         "caption": "妈妈药品照片",
         "source_name": "medication-photo.jpg",

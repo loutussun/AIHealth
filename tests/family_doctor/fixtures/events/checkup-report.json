@@ -21,8 +21,8 @@
     "attachments": [
       {
         "attachment_id": "att_checkup_report_001",
-        "kind": "report",
-        "path": "/Users/loutussun/Documents/codex/AIHealth/tests/family_doctor/fixtures/files/checkup-report.txt",
+        "kind": "text",
+        "path": "tests/family_doctor/fixtures/files/checkup-report.txt",
         "mime_type": "text/plain",
         "caption": "爸爸体检报告",
         "source_name": "checkup-report.txt",

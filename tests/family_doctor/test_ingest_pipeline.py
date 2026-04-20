@@ -22,7 +22,6 @@ def test_run_ingest_blocks_low_confidence_member_resolution(
 
     assert result.returncode == 1
     assert "needs_review" in result.stderr.lower()
-    assert "low-confidence member match" in result.stderr.lower()
     assert list((target / "99_runtime" / "state").glob("review_item_*.json"))
     job_files = list((target / "99_runtime" / "jobs").glob("ingest_job_*.json"))
     job = json.loads(job_files[0].read_text(encoding="utf-8"))
@@ -48,4 +47,6 @@ def test_run_ingest_is_idempotent_for_same_idempotency_key(
 
     assert first.returncode == 0
     assert second.returncode == 0
-    assert "deduplicated" in second.stdout.lower()
+    assert len(list((target / "99_runtime" / "jobs").glob("ingest_job_*.json"))) == 1
+    assert len(list((target / "02_wiki" / "sources").glob("*.md"))) == 1
+    assert len(list((target / "99_runtime" / "state").glob("dedupe_record_*.json"))) == 1

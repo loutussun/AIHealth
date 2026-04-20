@@ -70,6 +70,12 @@
 
 ### Task 1: Establish the Ingest Package Boundary and Red Tests
 
+Task 1 的测试是前瞻性红测：它们会先锁住未来 Task 2 到 Task 4 才会逐步实现的行为。Task 1 的验收重点是：
+
+- 测试文件和 fixture 先落地
+- 当前失败主因是“实现缺失”
+- 不提前实现后续任务逻辑
+
 **Files:**
 - Create: `family_doctor/__init__.py`
 - Create: `family_doctor/ingest_models.py`
