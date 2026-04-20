@@ -34,10 +34,19 @@ def _safe_name(value: str) -> str:
     return normalized or "attachment"
 
 
+def _assert_within_root(path: Path, root: Path) -> Path:
+    resolved_path = path.resolve()
+    resolved_root = root.resolve()
+    resolved_path.relative_to(resolved_root)
+    return resolved_path
+
+
 def _target_name(event: IngestEvent, attachment: NormalizedAttachment) -> str:
     original_name = attachment.source_name or attachment.path.name or attachment.attachment_id
+    safe_event_id = _safe_name(event.event_id)
+    safe_attachment_id = _safe_name(attachment.attachment_id)
     safe_original = _safe_name(original_name)
-    return f"{event.event_id}__{attachment.attachment_id}__{safe_original}"
+    return f"{safe_event_id}__{safe_attachment_id}__{safe_original}"
 
 
 def archive_event_raw_files(target: Path, event: IngestEvent, source_kind: str) -> list[ArchivedArtifact]:
@@ -50,7 +59,7 @@ def archive_event_raw_files(target: Path, event: IngestEvent, source_kind: str) 
 
     archived: list[ArchivedArtifact] = []
     for attachment in event.attachments:
-        archived_path = archive_root / _target_name(event, attachment)
+        archived_path = _assert_within_root(archive_root / _target_name(event, attachment), archive_root)
         shutil.copy2(attachment.path, archived_path)
         archived.append(
             ArchivedArtifact(

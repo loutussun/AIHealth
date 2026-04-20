@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from family_doctor.ingest_models import IngestEvent
-from family_doctor.raw_archive import ArchivedArtifact
+from family_doctor.raw_archive import ArchivedArtifact, _assert_within_root, _safe_name
 
 
 def _yaml_scalar(value: str | None) -> str:
@@ -42,6 +42,8 @@ def _source_info_lines(
         f"- occurred_at: `{event.occurred_at}`",
         f"- trigger_mode: `{event.trigger_mode}`",
     ]
+    if event.payload_text:
+        lines.append(f"- payload_text: `{event.payload_text}`")
     if archived_artifacts:
         lines.append("- archived_attachments:")
         for artifact in archived_artifacts:
@@ -108,8 +110,10 @@ def build_source_page_content(
 def write_source_page(
     target: Path, event: IngestEvent, source_kind: str, archived_artifacts: list[ArchivedArtifact]
 ) -> Path:
-    source_page_path = target / "02_wiki" / "sources" / f"{event.event_id}.md"
-    source_page_path.parent.mkdir(parents=True, exist_ok=True)
+    source_root = target / "02_wiki" / "sources"
+    source_root.mkdir(parents=True, exist_ok=True)
+    safe_filename = f"{_safe_name(event.event_id)}.md"
+    source_page_path = _assert_within_root(source_root / safe_filename, source_root)
     source_page_path.write_text(
         build_source_page_content(event, source_kind, archived_artifacts),
         encoding="utf-8",

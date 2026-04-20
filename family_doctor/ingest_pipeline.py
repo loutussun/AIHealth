@@ -282,19 +282,57 @@ def _duplicate_result_details(
 
 def _classification(event: IngestEvent) -> str:
     text = (event.payload_text or "").lower()
+    attachment_kinds = {attachment.kind for attachment in event.attachments}
     names = " ".join(
         [
             event.member_hint.lower(),
-            *(attachment.source_name.lower() for attachment in event.attachments if attachment.source_name),
+            *(
+                attachment.source_name.lower()
+                for attachment in event.attachments
+                if attachment.source_name
+            ),
+            *(attachment.caption.lower() for attachment in event.attachments if attachment.caption),
         ]
     )
     blob = f"{text} {names}"
+    symptom_terms = [
+        "symptom",
+        "症状",
+        "不舒服",
+        "疼",
+        "咳嗽",
+        "发热",
+        "发烧",
+        "头痛",
+        "头晕",
+        "恶心",
+        "呕吐",
+        "腹痛",
+        "腹泻",
+        "拉肚子",
+        "乏力",
+        "胸闷",
+        "胸痛",
+        "气短",
+        "鼻塞",
+        "流鼻涕",
+        "喉咙痛",
+        "嗓子痛",
+        "咽痛",
+        "皮疹",
+        "红疹",
+        "失眠",
+    ]
 
     if any(keyword in blob for keyword in ["lab", "化验", "检验", "化验单"]):
         return "lab_result"
     if any(keyword in blob for keyword in ["medication", "药", "处方", "药品"]):
         return "medication_record"
-    if any(keyword in blob for keyword in ["symptom", "症状", "不舒服", "疼"]):
+    if any(keyword in blob for keyword in ["checkup", "体检", "报告", "report"]):
+        return "checkup_report"
+    if any(keyword in blob for keyword in symptom_terms):
+        return "symptom_note"
+    if "text" in attachment_kinds:
         return "symptom_note"
     return "checkup_report"
 
@@ -332,20 +370,24 @@ def _artifact_entry(
     target: Path,
     **extra: Any,
 ) -> dict[str, Any]:
+    resolved_path = path.resolve()
+    resolved_target = target.resolve()
     artifact: dict[str, Any] = {
         "artifact_type": artifact_type,
-        "path": str(path),
-        "relative_path": path.relative_to(target).as_posix(),
+        "path": str(resolved_path),
+        "relative_path": resolved_path.relative_to(resolved_target).as_posix(),
     }
     artifact.update(extra)
     return artifact
 
 
 def _wiki_update(path: Path, target: Path, source_id: str) -> dict[str, Any]:
+    resolved_path = path.resolve()
+    resolved_target = target.resolve()
     return {
         "page_type": "source_page",
-        "path": str(path),
-        "relative_path": path.relative_to(target).as_posix(),
+        "path": str(resolved_path),
+        "relative_path": resolved_path.relative_to(resolved_target).as_posix(),
         "source_id": source_id,
         "status": "committed",
     }
@@ -359,6 +401,14 @@ def _planned_writes(source_kind: str, needs_review: bool) -> list[str]:
     if needs_review:
         writes.append("review_item")
     return writes
+
+
+def _dedupe_completed_writes(*categories: str) -> list[str]:
+    ordered: list[str] = []
+    for category in categories:
+        if category not in ordered:
+            ordered.append(category)
+    return ordered
 
 
 def _output_result(
@@ -489,7 +539,38 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     _write_job_fingerprint(initial_job, fingerprint)
 
     archived_artifacts = archive_event_raw_files(target, event, source_kind)
+    archived_checkpoint = write_ingest_job(
+        target=target,
+        event=event,
+        phase="archived_raw",
+        status="processing",
+        planned_writes=_planned_writes(
+            source_kind, event.match_confidence < REVIEW_THRESHOLD or event.member_id is None
+        ),
+        completed_writes=_dedupe_completed_writes(
+            "ingest_job", *(["raw_archive"] if archived_artifacts else [])
+        ),
+        source_id=event.event_id,
+        recovery_hint="resume from archived_raw phase",
+    )
+    _write_job_fingerprint(archived_checkpoint, fingerprint)
+
     source_page_path = write_source_page(target, event, source_kind, archived_artifacts)
+    source_checkpoint = write_ingest_job(
+        target=target,
+        event=event,
+        phase="wrote_source",
+        status="processing",
+        planned_writes=_planned_writes(
+            source_kind, event.match_confidence < REVIEW_THRESHOLD or event.member_id is None
+        ),
+        completed_writes=_dedupe_completed_writes(
+            "ingest_job", *(["raw_archive"] if archived_artifacts else []), "source_page"
+        ),
+        source_id=event.event_id,
+        recovery_hint="resume from wrote_source phase",
+    )
+    _write_job_fingerprint(source_checkpoint, fingerprint)
 
     artifacts = [
         _artifact_entry(
@@ -506,12 +587,12 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     )
     wiki_updates = [_wiki_update(source_page_path, target, event.event_id)]
 
-    completed_writes = ["ingest_job"]
+    completed_writes = _dedupe_completed_writes(
+        "ingest_job", *(["raw_archive"] if archived_artifacts else []), "source_page"
+    )
     runtime_updates: list[dict[str, Any]] = []
     for artifact in archived_artifacts:
-        completed_writes.append("raw_archive")
         runtime_updates.append(_runtime_update(artifact.path, "raw_archive", "committed"))
-    completed_writes.append("source_page")
     runtime_updates.append(_runtime_update(source_page_path, "source_page", "committed"))
 
     if event.match_confidence < REVIEW_THRESHOLD or event.member_id is None:
@@ -524,10 +605,10 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         write_ingest_job(
             target=target,
             event=event,
-            phase="accepted",
+            phase="wrote_source",
             status="pending_review",
             planned_writes=_planned_writes(source_kind, True),
-            completed_writes=[*completed_writes, "review_item"],
+            completed_writes=_dedupe_completed_writes(*completed_writes, "review_item"),
             source_id=event.event_id,
             recovery_hint="waiting on human review for member resolution",
         )
@@ -539,7 +620,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             wiki_updates=wiki_updates,
             runtime_updates=[
                 *runtime_updates,
-                _runtime_update(initial_job, "ingest_job", "pending_review", "accepted"),
+                _runtime_update(source_checkpoint, "ingest_job", "pending_review", "wrote_source"),
                 _runtime_update(review_path, "review_item", "committed"),
             ],
             evidence_refs=_evidence_refs(event),

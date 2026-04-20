@@ -62,7 +62,7 @@ def test_run_ingest_blocks_low_confidence_member_resolution(run_bootstrap, tmp_p
     assert len(job_files) == 1
     job = json.loads(job_files[0].read_text(encoding="utf-8"))
     assert job["status"] == "pending_review"
-    assert job["phase"] == "accepted"
+    assert job["phase"] == "wrote_source"
 
 
 def test_run_ingest_is_idempotent_for_same_idempotency_key(run_bootstrap, tmp_path):
@@ -101,7 +101,7 @@ def test_run_ingest_duplicate_of_pending_review_preserves_needs_review(run_boots
     duplicate_job_path = target / "99_runtime" / "jobs" / "ingest_job_evt_symptom_note_low_confidence_002.json"
     duplicate_job = json.loads(duplicate_job_path.read_text(encoding="utf-8"))
     assert duplicate_job["status"] == "pending_review"
-    assert duplicate_job["phase"] == "accepted"
+    assert duplicate_job["phase"] == "wrote_source"
     assert duplicate_job["completed_writes"] == ["ingest_job", "dedupe_record"]
 
     dedupe_path = target / "99_runtime" / "state" / "dedupe_record_evt_symptom_note_low_confidence_002.json"
