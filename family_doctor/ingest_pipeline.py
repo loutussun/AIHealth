@@ -253,14 +253,28 @@ def _duplicate_result_details(
             "matched duplicate is still in flight",
         )
 
+    if matched_job_status == "committed" and matched_job_phase == "committed":
+        return (
+            "committed",
+            "committed",
+            "ok",
+            "",
+            "已识别为重复输入，未重复处理。",
+            [],
+            None,
+        )
+
+    failure_status = matched_job_status if matched_job_status in {"failed", "aborted"} else "failed"
+    failure_phase = matched_job_phase or "accepted"
+    failure_label = matched_job_status or "unknown"
     return (
-        "committed",
-        matched_job_phase or "committed",
-        "ok",
-        "",
-        "已识别为重复输入，未重复处理。",
-        [],
-        None,
+        failure_status,
+        failure_phase,
+        "error",
+        f"matched job is not in a reusable success state ({failure_label})",
+        "已识别为重复输入，但关联任务未处于可复用的成功状态。",
+        ["检查已命中的运行时任务状态后再决定是否重试。"],
+        "matched duplicate is not in a reusable success state",
     )
 
 

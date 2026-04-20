@@ -122,3 +122,83 @@ def test_ingest_pipeline_duplicate_processing_keeps_in_flight_runtime_contract(
         update["entity_type"] == "ingest_job" and update["status"] == "committed"
         for update in result["runtime_updates"]
     )
+
+
+def test_ingest_pipeline_duplicate_created_keeps_in_flight_runtime_contract(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    initial_event = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_created_contract_001",
+    )
+    duplicate_event = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_created_contract_002",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    initial_result = run_ingest_pipeline(initial_event, target)
+    initial_job_path = Path(
+        next(
+            update["path"]
+            for update in initial_result["runtime_updates"]
+            if update["entity_type"] == "ingest_job"
+        )
+    )
+    initial_job = json.loads(initial_job_path.read_text(encoding="utf-8"))
+    initial_job["status"] = "created"
+    initial_job["phase"] = "accepted"
+    initial_job_path.write_text(json.dumps(initial_job, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    result = run_ingest_pipeline(duplicate_event, target)
+
+    assert result["status"] == "ok"
+    _assert_contract(result)
+    assert "still created" in result["summary"].lower()
+    assert any(update["status"] == "created" for update in result["runtime_updates"])
+    assert not any(
+        update["entity_type"] == "ingest_job" and update["status"] == "committed"
+        for update in result["runtime_updates"]
+    )
+
+
+def test_ingest_pipeline_duplicate_failed_returns_error_contract(run_bootstrap, tmp_path):
+    target = tmp_path / "family-health"
+    initial_event = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_failed_contract_001",
+    )
+    duplicate_event = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_failed_contract_002",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    initial_result = run_ingest_pipeline(initial_event, target)
+    initial_job_path = Path(
+        next(
+            update["path"]
+            for update in initial_result["runtime_updates"]
+            if update["entity_type"] == "ingest_job"
+        )
+    )
+    initial_job = json.loads(initial_job_path.read_text(encoding="utf-8"))
+    initial_job["status"] = "failed"
+    initial_job["phase"] = "accepted"
+    initial_job_path.write_text(json.dumps(initial_job, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    result = run_ingest_pipeline(duplicate_event, target)
+
+    assert result["status"] == "error"
+    _assert_contract(result)
+    assert "not in a reusable success state" in result["summary"].lower()
+    assert any(update["status"] == "failed" for update in result["runtime_updates"])
+    assert not any(
+        update["entity_type"] == "ingest_job" and update["status"] == "committed"
+        for update in result["runtime_updates"]
+    )

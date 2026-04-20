@@ -233,3 +233,93 @@ def test_run_ingest_duplicate_of_processing_job_stays_in_flight(run_bootstrap, t
     persisted_first_job = json.loads(first_job.read_text(encoding="utf-8"))
     assert persisted_first_job["status"] == "processing"
     assert persisted_first_job["phase"] == "accepted"
+
+
+def test_run_ingest_duplicate_of_created_job_stays_in_flight(run_bootstrap, tmp_path):
+    target = tmp_path / "family-health"
+    first_event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_created_001",
+    )
+    duplicate_event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_created_002",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    first_event = load_event(first_event_path)
+    first_job = write_ingest_job(
+        target=target,
+        event=first_event,
+        phase="accepted",
+        status="created",
+        planned_writes=["ingest_job", "review_item"],
+        completed_writes=["ingest_job"],
+        source_id=first_event.event_id,
+        recovery_hint="resume from accepted phase",
+    )
+    first_job_payload = json.loads(first_job.read_text(encoding="utf-8"))
+    first_job_payload["fingerprint"] = derive_dedupe_fingerprint(first_event)
+    first_job.write_text(json.dumps(first_job_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    result = run_ingest_pipeline(duplicate_event_path, target)
+
+    assert result["status"] == "ok"
+    assert "deduplicated" in result["summary"].lower()
+    assert "still created" in result["summary"].lower()
+
+    duplicate_job = json.loads(
+        (target / "99_runtime" / "jobs" / "ingest_job_evt_checkup_report_created_002.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert duplicate_job["status"] == "created"
+    assert duplicate_job["phase"] == "accepted"
+    assert duplicate_job["completed_writes"] == ["ingest_job", "dedupe_record"]
+
+
+def test_run_ingest_duplicate_of_failed_job_returns_error(run_bootstrap, tmp_path):
+    target = tmp_path / "family-health"
+    first_event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_failed_001",
+    )
+    duplicate_event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_report_failed_002",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    first_event = load_event(first_event_path)
+    first_job = write_ingest_job(
+        target=target,
+        event=first_event,
+        phase="accepted",
+        status="failed",
+        planned_writes=["ingest_job", "review_item"],
+        completed_writes=["ingest_job"],
+        source_id=first_event.event_id,
+        recovery_hint="inspect failure before retry",
+    )
+    first_job_payload = json.loads(first_job.read_text(encoding="utf-8"))
+    first_job_payload["fingerprint"] = derive_dedupe_fingerprint(first_event)
+    first_job.write_text(json.dumps(first_job_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    result = run_ingest_pipeline(duplicate_event_path, target)
+
+    assert result["status"] == "error"
+    assert "deduplicated" in result["summary"].lower()
+    assert "not in a reusable success state" in result["summary"].lower()
+
+    duplicate_job = json.loads(
+        (target / "99_runtime" / "jobs" / "ingest_job_evt_checkup_report_failed_002.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert duplicate_job["status"] == "failed"
+    assert duplicate_job["phase"] == "accepted"
+    assert duplicate_job["completed_writes"] == ["ingest_job", "dedupe_record"]
