@@ -1,0 +1,29 @@
+name: Phase 0 CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate-phase0:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Validate canonical scaffold
+        run: python3 scripts/family_doctor/validate_phase0.py --target family-health
+
+      - name: Run Phase 0 tests
+        run: PYTHONPATH=/tmp/codex_pytest python3 -m pytest tests/family_doctor -q
