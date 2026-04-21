@@ -13,6 +13,21 @@ def _event_path(name: str) -> Path:
     return ROOT / "tests" / "family_doctor" / "fixtures" / "events" / name
 
 
+def _safe_event_filename(label: str) -> str:
+    sanitized = "".join(char if char.isalnum() or char in {"-", "_"} else "_" for char in label)
+    return sanitized or "input_event"
+
+
+def _write_event_payload(tmp_path: Path, payload: dict, *, label: str) -> Path:
+    event_path = tmp_path / f"{_safe_event_filename(label)}.json"
+    suffix = 1
+    while event_path.exists():
+        event_path = tmp_path / f"{_safe_event_filename(label)}_{suffix}.json"
+        suffix += 1
+    event_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return event_path
+
+
 def _materialize_event(
     tmp_path: Path,
     source_name: str,
@@ -37,9 +52,7 @@ def _materialize_event(
             ),
         }
 
-    event_path = tmp_path / f"{event_id}.json"
-    event_path.write_text(json.dumps(raw_event, ensure_ascii=False, indent=2), encoding="utf-8")
-    return event_path
+    return _write_event_payload(tmp_path, raw_event, label=f"{source_name}_{event_id}")
 
 
 def _materialize_plain_symptom_event(tmp_path: Path, *, event_id: str) -> Path:
@@ -60,9 +73,7 @@ def _materialize_plain_symptom_event(tmp_path: Path, *, event_id: str) -> Path:
     raw_event["payload"]["attachments"][0]["source_name"] = "note.txt"
     raw_event["payload"]["attachments"][0]["caption"] = "昨晚开始咳嗽发热两天"
 
-    event_path = tmp_path / f"{event_id}.json"
-    event_path.write_text(json.dumps(raw_event, ensure_ascii=False, indent=2), encoding="utf-8")
-    return event_path
+    return _write_event_payload(tmp_path, raw_event, label=f"plain_symptom_{event_id}")
 
 
 def test_lab_report_writes_source_page_with_raw_archive_reference(run_bootstrap, tmp_path):
