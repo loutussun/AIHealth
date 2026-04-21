@@ -19,12 +19,20 @@
 - `bootstrap_vault.py`
 - `validate_phase0.py`
 - Phase 0 自动化测试基线
+- Git / GitHub 基线与 `Phase 0 CI`
+- `Phase 1 ingest MVP`
+- `Phase 2 query / report / reminder` 核心实现
+- `Phase 2 thin CLI`
+- `Phase 2` family_doctor 回归套件
+
+当前进行中：
+
+- `Phase 2` 收尾文档与 checkpoint
 
 当前尚未开始：
 
-- `Phase 1 ingest MVP`
-- query / report / reminder 业务逻辑
 - OCR、即时通讯接入、调度器接入
+- richer trends / writeback / advanced reminder rules
 
 ## 核心目录
 
@@ -49,6 +57,18 @@ AIHealth/
   [2026-04-19-family-doctor-phase0-foundation.md](docs/superpowers/plans/2026-04-19-family-doctor-phase0-foundation.md)
 - 当前交接文档：
   [2026-04-20-family-doctor-project-handoff.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-handoff.md)
+- Phase 1 完成说明：
+  [2026-04-21-family-doctor-phase1-ingest-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase1-ingest-completion.md)
+- Phase 2 完成说明：
+  [2026-04-21-family-doctor-phase2-query-report-reminder-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase2-query-report-reminder-completion.md)
+- 当前最新快照：
+  [2026-04-21-family-doctor-project-snapshot-phase2.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot-phase2.md)
+- 之前的 Phase 1 快照：
+  [2026-04-21-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot.md)
+- 上一版快照：
+  [2026-04-20-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
+- 下一阶段 planning：
+  [2026-04-21-family-doctor-phase2-query-report-reminder.md](docs/superpowers/plans/2026-04-21-family-doctor-phase2-query-report-reminder.md)
 
 ## 本地验证
 
@@ -58,12 +78,28 @@ AIHealth/
 python3 scripts/family_doctor/validate_phase0.py --target /Users/loutussun/Documents/codex/AIHealth/family-health
 ```
 
-### 2. 运行 Phase 0 测试
+### 2. 运行当前 family_doctor 回归套件
 
 当前环境默认没有可直接调用的 `pytest` 命令，统一使用：
 
 ```bash
-PYTHONPATH=/tmp/codex_pytest python3 -m pytest tests/family_doctor -q
+PYTHONPATH=. uv run pytest \
+  tests/family_doctor/test_query_pipeline.py \
+  tests/family_doctor/test_query_contract.py \
+  tests/family_doctor/test_report_pipeline.py \
+  tests/family_doctor/test_report_outputs.py \
+  tests/family_doctor/test_reminder_pipeline.py \
+  tests/family_doctor/test_reminder_runtime.py \
+  tests/family_doctor/test_query_cli.py \
+  tests/family_doctor/test_report_cli.py \
+  tests/family_doctor/test_reminder_cli.py \
+  tests/family_doctor/test_run_ingest_cli.py \
+  tests/family_doctor/test_ingest_acceptance.py \
+  tests/family_doctor/test_wiki_updates.py \
+  tests/family_doctor/test_source_pages.py \
+  tests/family_doctor/test_ingest_pipeline.py \
+  tests/family_doctor/test_output_contract.py \
+  tests/family_doctor/test_phase1_regression_smoke.py -q
 ```
 
 ## Bootstrap 新 vault
@@ -88,13 +124,11 @@ python3 scripts/family_doctor/validate_phase0.py --target /tmp/family-health-dem
 
 ## 下一步
 
-下一阶段建议直接进入：
+当前最推荐的直接下一步：
 
-- `Phase 1: ingest MVP`
-
-建议从下面几个点开始：
-
-1. 为 `ingest MVP` 写 implementation plan
-2. 先支持体检报告、化验单、药盒 / 处方、手工症状文本
-3. 优先落 `sources/` 页面生成和最小增量更新链路
-4. 延续当前 Phase 0 的验证和 review 节奏
+1. 把 `Phase 2` 代码与文档整理成 checkpoint commit
+2. 在 reviewer 配额恢复后补一条 CLI 最终质量留痕
+3. 决定是否进入下一阶段规划：
+   - richer trends / writeback
+   - `needs_review` CLI 回归
+   - 更完整的 reminder rule / plan 体系

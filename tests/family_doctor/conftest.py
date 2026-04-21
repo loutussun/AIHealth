@@ -12,6 +12,10 @@ INGEST = ROOT / "scripts" / "family_doctor" / "run_ingest.py"
 VALIDATE = ROOT / "scripts" / "family_doctor" / "validate_phase0.py"
 
 
+def _event_path(name: str) -> Path:
+    return ROOT / "tests" / "family_doctor" / "fixtures" / "events" / name
+
+
 @pytest.fixture
 def run_bootstrap():
     def _run_bootstrap(target: Path):
@@ -65,3 +69,28 @@ def run_validate():
         )
 
     return _run_validate
+
+
+@pytest.fixture
+def materialize_query_event():
+    def _materialize_query_event(
+        tmp_path: Path,
+        *,
+        question: str,
+        intent_hint: str,
+        allow_qa_summary_reuse: bool = False,
+    ) -> Path:
+        raw_event = json.loads(_event_path("query-mvp.json").read_text(encoding="utf-8"))
+        raw_event["event_id"] = f"evt_{intent_hint}"
+        raw_event["request_id"] = f"req_{intent_hint}"
+        raw_event["correlation_id"] = f"corr_{intent_hint}"
+        raw_event["idempotency_key"] = f"idem_{intent_hint}"
+        raw_event["payload"]["text"] = question
+        raw_event["payload"]["intent_hint"] = intent_hint
+        raw_event["payload"]["allow_qa_summary_reuse"] = allow_qa_summary_reuse
+
+        event_path = tmp_path / f"{intent_hint}.json"
+        event_path.write_text(json.dumps(raw_event, ensure_ascii=False, indent=2), encoding="utf-8")
+        return event_path
+
+    return _materialize_query_event

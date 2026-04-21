@@ -1,0 +1,37 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from family_doctor.query_pipeline import run_query_pipeline
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the family doctor query pipeline.")
+    parser.add_argument("--event", required=True, type=Path)
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+
+    try:
+        result = run_query_pipeline(args.event)
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    json.dump(result, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

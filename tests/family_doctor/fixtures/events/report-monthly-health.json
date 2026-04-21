@@ -1,0 +1,37 @@
+{
+  "event_id": "evt_report_monthly_health_001",
+  "request_id": "req_report_monthly_health_001",
+  "idempotency_key": "idem_report_monthly_health_001",
+  "correlation_id": "corr_report_monthly_health_001",
+  "causation_id": null,
+  "event_type": "report",
+  "trigger_mode": "scheduled",
+  "occurred_at": "2026-04-21T09:00:00+08:00",
+  "actor": {
+    "actor_id": "system_scheduler",
+    "role": "system"
+  },
+  "target": {
+    "member_id": null,
+    "member_hint": "family",
+    "match_confidence": 1.0
+  },
+  "payload": {
+    "report_kind": "monthly_health_report",
+    "member_scope": "family",
+    "period_start": "2026-03-21",
+    "period_end": "2026-04-20",
+    "source_refs": [
+      "trend:monthly_overview_2026_04",
+      "source:evt_lab_report_001"
+    ]
+  },
+  "context": {
+    "source": "family-doctor-fixture",
+    "locale": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "dedupe_scope": "family-health"
+  }
+}
