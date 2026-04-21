@@ -1,0 +1,36 @@
+{
+  "event_id": "evt_report_checkup_update_001",
+  "request_id": "req_report_checkup_update_001",
+  "idempotency_key": "idem_report_checkup_update_001",
+  "correlation_id": "corr_report_checkup_update_001",
+  "causation_id": null,
+  "event_type": "report",
+  "trigger_mode": "scheduled",
+  "occurred_at": "2026-04-21T08:00:00+08:00",
+  "actor": {
+    "actor_id": "system_scheduler",
+    "role": "system"
+  },
+  "target": {
+    "member_id": "dad",
+    "member_hint": "dad",
+    "match_confidence": 1.0
+  },
+  "payload": {
+    "report_kind": "checkup_update",
+    "period_start": "2026-04-01",
+    "period_end": "2026-04-21",
+    "source_refs": [
+      "source:evt_checkup_report_001"
+    ]
+  },
+  "context": {
+    "source": "family-doctor-fixture",
+    "locale": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  },
+  "runtime": {
+    "related_runtime_id": "runtime_query_checkup_001",
+    "dedupe_scope": "family-health"
+  }
+}

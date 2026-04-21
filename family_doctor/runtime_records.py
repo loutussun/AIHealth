@@ -126,6 +126,21 @@ def write_dedupe_record(
     return _write_json(path, payload)
 
 
+def reminder_instance_path(target: Path, runtime_id: str) -> Path:
+    state_root = _runtime_root(target) / "state"
+    filename = f"reminder_instance_{_safe_name(runtime_id)}.json"
+    return _assert_within_root(state_root / filename, state_root)
+
+
+def write_reminder_instance(target: Path, payload: dict[str, Any]) -> Path:
+    runtime_id = payload.get("runtime_id") or payload.get("instance_id")
+    if not isinstance(runtime_id, str) or not runtime_id:
+        raise ValueError("reminder_instance payload requires runtime_id or instance_id")
+    if "runtime_id" not in payload:
+        payload = {**payload, "runtime_id": runtime_id}
+    return _write_json(reminder_instance_path(target, runtime_id), payload)
+
+
 def serialise_event(event: IngestEvent) -> dict[str, Any]:
     payload = asdict(event)
     payload["attachments"] = [asdict(attachment) for attachment in event.attachments]
