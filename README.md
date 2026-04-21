@@ -56,10 +56,14 @@ AIHealth/
   [2026-04-19-family-doctor-phase0-foundation.md](docs/superpowers/plans/2026-04-19-family-doctor-phase0-foundation.md)
 - 当前交接文档：
   [2026-04-20-family-doctor-project-handoff.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-handoff.md)
+- Phase 1 完成说明：
+  [2026-04-21-family-doctor-phase1-ingest-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase1-ingest-completion.md)
 - 当前最新快照：
   [2026-04-21-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot.md)
 - 上一版快照：
   [2026-04-20-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
+- 下一阶段 planning：
+  [2026-04-21-family-doctor-phase2-query-report-reminder.md](docs/superpowers/plans/2026-04-21-family-doctor-phase2-query-report-reminder.md)
 
 ## 本地验证
 
