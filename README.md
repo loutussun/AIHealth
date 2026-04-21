@@ -22,6 +22,7 @@
 - Git / GitHub 基线与 `Phase 0 CI`
 - `Phase 1 ingest MVP` plan
 - `Phase 1 / Task 1` 红测与 fixture 基线
+- `Phase 1 / Task 2-5` ingest 核心链路、最小 wiki updates、CLI 与 acceptance baseline
 
 当前进行中：
 
@@ -56,6 +57,8 @@ AIHealth/
 - 当前交接文档：
   [2026-04-20-family-doctor-project-handoff.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-handoff.md)
 - 当前最新快照：
+  [2026-04-21-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot.md)
+- 上一版快照：
   [2026-04-20-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
 
 ## 本地验证

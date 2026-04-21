@@ -139,6 +139,18 @@ def _derive_medication_stub(event: IngestEvent) -> tuple[str, str] | None:
     return None
 
 
+def planned_wiki_page_types(event: IngestEvent, source_kind: str) -> list[str]:
+    if event.member_id is None:
+        return []
+
+    page_types = ["member_page"]
+    if source_kind in {"symptom_note", "checkup_report", "lab_result"}:
+        page_types.append("plan_page")
+    if source_kind == "medication_record" and _derive_medication_stub(event) is not None:
+        page_types.append("medication_page")
+    return page_types
+
+
 def apply_wiki_updates(
     target: Path,
     event: IngestEvent,

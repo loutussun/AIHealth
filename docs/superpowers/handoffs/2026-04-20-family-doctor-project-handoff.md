@@ -5,6 +5,9 @@
 
 > 注意：这份文档主要记录 `Phase 0 foundation` 完成时的交接状态。  
 > 如果你要查看**当前最新项目快照**，请优先阅读：
+> [2026-04-21-family-doctor-project-snapshot.md](/Users/loutussun/.codex/worktrees/8402/AIHealth/docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot.md)
+>
+> 上一版快照仍保留在：
 > [2026-04-20-family-doctor-project-snapshot.md](/Users/loutussun/.codex/worktrees/8402/AIHealth/docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
 
 ## 1. 项目是什么

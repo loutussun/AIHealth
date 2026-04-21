@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+import pytest
+
+import family_doctor.ingest_pipeline as ingest_pipeline_module
 from family_doctor.ingest_pipeline import (
     derive_dedupe_fingerprint,
     load_event,
@@ -323,3 +326,68 @@ def test_run_ingest_duplicate_of_failed_job_returns_error(run_bootstrap, tmp_pat
     assert duplicate_job["status"] == "failed"
     assert duplicate_job["phase"] == "accepted"
     assert duplicate_job["completed_writes"] == ["ingest_job", "dedupe_record"]
+
+
+def test_run_ingest_rerun_same_event_resumes_after_wiki_update_crash(
+    monkeypatch, run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_resume_after_wiki_crash_001",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    original_apply = ingest_pipeline_module.apply_wiki_updates
+    state = {"raised": False}
+
+    def crash_after_writing(*args, **kwargs):
+        updates = original_apply(*args, **kwargs)
+        if not state["raised"]:
+            state["raised"] = True
+            raise RuntimeError("boom after wiki updates")
+        return updates
+
+    monkeypatch.setattr(ingest_pipeline_module, "apply_wiki_updates", crash_after_writing)
+
+    with pytest.raises(RuntimeError, match="boom after wiki updates"):
+        run_ingest_pipeline(event_path, target)
+
+    interrupted_job = json.loads(
+        (
+            target
+            / "99_runtime"
+            / "jobs"
+            / "ingest_job_evt_checkup_resume_after_wiki_crash_001.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert interrupted_job["status"] == "processing"
+    assert interrupted_job["phase"] == "wrote_source"
+    assert interrupted_job["completed_writes"] == ["ingest_job", "raw_archive", "source_page"]
+    assert (target / "02_wiki" / "members" / "dad.md").exists()
+    assert (target / "02_wiki" / "plans" / "dad.md").exists()
+
+    monkeypatch.setattr(ingest_pipeline_module, "apply_wiki_updates", original_apply)
+
+    result = run_ingest_pipeline(event_path, target)
+
+    assert result["status"] == "ok"
+    assert "deduplicated" not in result["summary"].lower()
+    resumed_job = json.loads(
+        (
+            target
+            / "99_runtime"
+            / "jobs"
+            / "ingest_job_evt_checkup_resume_after_wiki_crash_001.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert resumed_job["status"] == "committed"
+    assert resumed_job["phase"] == "committed"
+    assert set(resumed_job["completed_writes"]) == {
+        "ingest_job",
+        "raw_archive",
+        "source_page",
+        "member_page",
+        "plan_page",
+    }

@@ -13,7 +13,7 @@ from family_doctor.runtime_records import (
     write_review_item,
 )
 from family_doctor.source_pages import write_source_page
-from family_doctor.wiki_updates import apply_wiki_updates
+from family_doctor.wiki_updates import apply_wiki_updates, planned_wiki_page_types
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -186,6 +186,15 @@ def _find_job_record_by_event_id(target: Path, event_id: str) -> tuple[Path, dic
         if record.get("event_id") == event_id:
             return path, record
     return None
+
+
+def _is_resumable_current_job(target: Path, event: IngestEvent) -> bool:
+    existing = _find_job_record_by_event_id(target, event.event_id)
+    if existing is None:
+        return False
+
+    _, record = existing
+    return record.get("status") == "processing" and record.get("phase") == "wrote_source"
 
 
 def _resolve_duplicate_match(
@@ -394,11 +403,14 @@ def _wiki_update(path: Path, target: Path, source_id: str) -> dict[str, Any]:
     }
 
 
-def _planned_writes(source_kind: str, needs_review: bool) -> list[str]:
+def _planned_writes(source_kind: str, needs_review: bool, wiki_page_types: list[str] | None = None) -> list[str]:
     writes = ["ingest_job"]
     if should_archive_raw(source_kind):
         writes.append("raw_archive")
     writes.append("source_page")
+    for page_type in wiki_page_types or []:
+        if page_type not in writes:
+            writes.append(page_type)
     if needs_review:
         writes.append("review_item")
     return writes
@@ -440,7 +452,13 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     event = load_event(event_path)
     fingerprint = derive_dedupe_fingerprint(event)
     source_kind = _classification(event)
-    duplicate_kind, duplicate_path, matched_job_id = _find_duplicate(target, event, fingerprint)
+    allow_member_writes = event.member_id is not None and event.match_confidence >= REVIEW_THRESHOLD
+    expected_wiki_page_types = planned_wiki_page_types(event, source_kind) if allow_member_writes else []
+    duplicate_kind, duplicate_path, matched_job_id = (
+        (None, None, None)
+        if _is_resumable_current_job(target, event)
+        else _find_duplicate(target, event, fingerprint)
+    )
 
     if duplicate_path:
         matched_job_path, matched_job_record = _resolve_duplicate_match(
@@ -531,7 +549,9 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         phase="accepted",
         status="processing",
         planned_writes=_planned_writes(
-            source_kind, event.match_confidence < REVIEW_THRESHOLD or event.member_id is None
+            source_kind,
+            event.match_confidence < REVIEW_THRESHOLD or event.member_id is None,
+            expected_wiki_page_types,
         ),
         completed_writes=["ingest_job"],
         source_id=event.event_id,
@@ -546,7 +566,9 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         phase="archived_raw",
         status="processing",
         planned_writes=_planned_writes(
-            source_kind, event.match_confidence < REVIEW_THRESHOLD or event.member_id is None
+            source_kind,
+            event.match_confidence < REVIEW_THRESHOLD or event.member_id is None,
+            expected_wiki_page_types,
         ),
         completed_writes=_dedupe_completed_writes(
             "ingest_job", *(["raw_archive"] if archived_artifacts else [])
@@ -563,7 +585,9 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         phase="wrote_source",
         status="processing",
         planned_writes=_planned_writes(
-            source_kind, event.match_confidence < REVIEW_THRESHOLD or event.member_id is None
+            source_kind,
+            event.match_confidence < REVIEW_THRESHOLD or event.member_id is None,
+            expected_wiki_page_types,
         ),
         completed_writes=_dedupe_completed_writes(
             "ingest_job", *(["raw_archive"] if archived_artifacts else []), "source_page"
@@ -587,19 +611,6 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
         _artifact_entry(source_page_path, "source_page", target, source_id=event.event_id)
     )
     wiki_updates = [_wiki_update(source_page_path, target, event.event_id)]
-    additional_wiki_updates = apply_wiki_updates(target, event, source_kind, source_page_path)
-    wiki_updates.extend(additional_wiki_updates)
-    for update in additional_wiki_updates:
-        page_path = Path(update["path"])
-        artifacts.append(
-            _artifact_entry(
-                page_path,
-                update["page_type"],
-                target,
-                source_id=update["source_id"],
-            )
-        )
-
     completed_writes = _dedupe_completed_writes(
         "ingest_job", *(["raw_archive"] if archived_artifacts else []), "source_page"
     )
@@ -607,10 +618,6 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
     for artifact in archived_artifacts:
         runtime_updates.append(_runtime_update(artifact.path, "raw_archive", "committed"))
     runtime_updates.append(_runtime_update(source_page_path, "source_page", "committed"))
-    for update in additional_wiki_updates:
-        runtime_updates.append(
-            _runtime_update(Path(update["path"]), update["page_type"], update["status"])
-        )
 
     if event.match_confidence < REVIEW_THRESHOLD or event.member_id is None:
         review_path = write_review_item(
@@ -644,12 +651,30 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             followup_suggestions=["确认成员匹配后重新提交输入。"],
         )
 
+    additional_wiki_updates = apply_wiki_updates(target, event, source_kind, source_page_path)
+    wiki_updates.extend(additional_wiki_updates)
+    for update in additional_wiki_updates:
+        page_path = Path(update["path"])
+        artifacts.append(
+            _artifact_entry(
+                page_path,
+                update["page_type"],
+                target,
+                source_id=update["source_id"],
+            )
+        )
+        runtime_updates.append(
+            _runtime_update(page_path, update["page_type"], update["status"])
+        )
+        completed_writes = _dedupe_completed_writes(*completed_writes, update["page_type"])
+    completed_writes = _dedupe_completed_writes(*completed_writes, *expected_wiki_page_types)
+
     final_job = write_ingest_job(
         target=target,
         event=event,
         phase="committed",
         status="committed",
-        planned_writes=_planned_writes(source_kind, False),
+        planned_writes=_planned_writes(source_kind, False, expected_wiki_page_types),
         completed_writes=completed_writes,
         source_id=event.event_id,
         recovery_hint=None,

@@ -97,3 +97,89 @@ def test_medication_ingest_creates_medication_page_and_links_member(run_bootstra
 
     assert any(update["page_type"] == "member_page" for update in result["wiki_updates"])
     assert any(update["page_type"] == "medication_page" for update in result["wiki_updates"])
+
+
+def test_low_confidence_match_does_not_write_member_or_plan_pages(run_bootstrap, tmp_path):
+    target = tmp_path / "family-health"
+    event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_low_confidence_block_001",
+        member_id="dad",
+        member_hint="dad",
+        match_confidence=0.2,
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    result = run_ingest_pipeline(event_path, target)
+
+    assert result["status"] == "needs_review"
+    assert (target / "02_wiki" / "sources" / "evt_checkup_low_confidence_block_001.md").exists()
+    assert not (target / "02_wiki" / "members" / "dad.md").exists()
+    assert not (target / "02_wiki" / "plans" / "dad.md").exists()
+    assert all(
+        artifact["artifact_type"] not in {"member_page", "plan_page"} for artifact in result["artifacts"]
+    )
+    assert all(
+        update["page_type"] not in {"member_page", "plan_page"} for update in result["wiki_updates"]
+    )
+    assert all(
+        update["entity_type"] not in {"member_page", "plan_page"} for update in result["runtime_updates"]
+    )
+
+    ingest_job = json.loads(
+        (target / "99_runtime" / "jobs" / "ingest_job_evt_checkup_low_confidence_block_001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert ingest_job["status"] == "pending_review"
+    assert set(ingest_job["planned_writes"]) == {
+        "ingest_job",
+        "raw_archive",
+        "source_page",
+        "review_item",
+    }
+    assert set(ingest_job["completed_writes"]) == {
+        "ingest_job",
+        "raw_archive",
+        "source_page",
+        "review_item",
+    }
+
+
+def test_ingest_job_planned_and_completed_writes_include_member_and_plan_pages(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    event_path = _materialize_event(
+        tmp_path,
+        "symptom-note-low-confidence.json",
+        event_id="evt_symptom_write_sets_001",
+        member_id="dad",
+        member_hint="dad",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    result = run_ingest_pipeline(event_path, target)
+
+    assert result["status"] == "ok"
+    ingest_job = json.loads(
+        (target / "99_runtime" / "jobs" / "ingest_job_evt_symptom_write_sets_001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert set(ingest_job["planned_writes"]) == {
+        "ingest_job",
+        "source_page",
+        "member_page",
+        "plan_page",
+    }
+    assert set(ingest_job["completed_writes"]) == {
+        "ingest_job",
+        "source_page",
+        "member_page",
+        "plan_page",
+    }
+    assert any(artifact["artifact_type"] == "member_page" for artifact in result["artifacts"])
+    assert any(artifact["artifact_type"] == "plan_page" for artifact in result["artifacts"])
