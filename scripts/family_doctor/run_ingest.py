@@ -25,6 +25,9 @@ def main() -> int:
 
     try:
         result = run_ingest_pipeline(args.event, args.target)
+    except FileNotFoundError:
+        print(f"error: event file not found: {args.event}", file=sys.stderr)
+        return 1
     except Exception as exc:
         print(str(exc), file=sys.stderr)
         return 1

@@ -1,4 +1,5 @@
 import json
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -110,6 +111,23 @@ def test_run_ingest_duplicate_of_pending_review_preserves_needs_review(run_boots
     dedupe_path = target / "99_runtime" / "state" / "dedupe_record_evt_symptom_note_low_confidence_002.json"
     dedupe_record = json.loads(dedupe_path.read_text(encoding="utf-8"))
     assert dedupe_record["matched_job_id"] == "evt_symptom_note_low_confidence_001"
+
+
+def test_run_ingest_rerun_same_low_confidence_event_stays_deduplicated(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    event = _event_path("symptom-note-low-confidence.json")
+    assert run_bootstrap(target).returncode == 0
+
+    first = run_ingest_pipeline(event, target)
+    second = run_ingest_pipeline(event, target)
+
+    assert first["status"] == "needs_review"
+    assert second["status"] == "needs_review"
+    assert "deduplicated" in second["summary"].lower()
+    assert len(list((target / "99_runtime" / "state").glob("review_item_*.json"))) == 1
+    assert len(list((target / "02_wiki" / "sources").glob("*.md"))) == 1
 
 
 def test_run_ingest_creates_current_job_for_new_event_with_same_idempotency_key(
@@ -491,3 +509,19 @@ def test_run_ingest_rerun_same_event_resumes_after_source_page_crash(
     )
     assert resumed_job["status"] == "committed"
     assert resumed_job["phase"] == "committed"
+
+
+def test_load_event_rejects_absolute_attachment_path_outside_approved_roots(tmp_path):
+    raw_event = json.loads(_event_path("checkup-report.json").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory(dir=tmp_path.parent) as outside_dir:
+        outside_file = Path(outside_dir) / "outside.txt"
+        outside_file.write_text("outside", encoding="utf-8")
+        raw_event["payload"]["attachments"][0]["path"] = str(outside_file)
+        event_path = tmp_path / "outside-event.json"
+        event_path.write_text(json.dumps(raw_event, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        with pytest.raises(
+            ingest_pipeline_module.IngestError,
+            match="attachment.path must stay within approved roots",
+        ):
+            load_event(event_path)

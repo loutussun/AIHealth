@@ -63,9 +63,23 @@ def _require_list(raw: Any, label: str) -> list[Any]:
 
 def _resolve_attachment_path(raw_path: str, event_path: Path) -> Path:
     candidate = Path(raw_path)
+    approved_roots = (event_path.parent.resolve(), REPO_ROOT.resolve())
+
+    def _is_within_approved_roots(path: Path) -> bool:
+        resolved_path = path.resolve()
+        for root in approved_roots:
+            try:
+                resolved_path.relative_to(root)
+                return True
+            except ValueError:
+                continue
+        return False
+
     if candidate.is_absolute():
+        if candidate.exists() and _is_within_approved_roots(candidate):
+            return candidate.resolve()
         if candidate.exists():
-            return candidate
+            raise IngestError("attachment.path must stay within approved roots")
         raise IngestError(f"attachment.path does not exist: {candidate}")
 
     for resolved in (
@@ -73,7 +87,7 @@ def _resolve_attachment_path(raw_path: str, event_path: Path) -> Path:
         (Path.cwd() / candidate).resolve(),
         (REPO_ROOT / candidate).resolve(),
     ):
-        if resolved.exists():
+        if resolved.exists() and _is_within_approved_roots(resolved):
             return resolved
 
     raise IngestError(f"attachment.path does not exist: {raw_path}")
@@ -630,7 +644,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             reason="low-confidence member match",
             severity="medium",
         )
-        write_ingest_job(
+        pending_review_job = write_ingest_job(
             target=target,
             event=event,
             phase="wrote_source",
@@ -640,6 +654,7 @@ def run_ingest_pipeline(event_path: Path, target: Path) -> dict[str, Any]:
             source_id=event.event_id,
             recovery_hint="waiting on human review for member resolution",
         )
+        _write_job_fingerprint(pending_review_job, fingerprint)
         return _output_result(
             status="needs_review",
             summary=f"low-confidence member match for {event.event_id}",

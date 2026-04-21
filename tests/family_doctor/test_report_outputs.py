@@ -70,6 +70,27 @@ def test_report_output_template_frontmatter_tracks_member_id_without_polluting_s
     assert "member:dad" not in content
 
 
+def test_report_output_template_keeps_empty_refs_empty_without_fake_pending_entries():
+    context = ReportTemplateContext(
+        output_id="out_empty_refs",
+        report_kind="weekly_health_report",
+        member_id=None,
+        member_scope="family",
+        period_start="2026-04-14",
+        period_end="2026-04-20",
+        related_runtime_id=None,
+        source_refs=(),
+        evidence_refs=(),
+    )
+
+    content = build_report_output_markdown(context)
+    frontmatter = _frontmatter(content)
+
+    assert "source_refs:" in frontmatter
+    assert "evidence_refs:" in frontmatter
+    assert "  - pending" not in frontmatter
+
+
 @pytest.mark.parametrize(
     "report_kind",
     [

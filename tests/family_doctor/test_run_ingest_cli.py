@@ -40,8 +40,9 @@ def test_run_ingest_reports_errors_to_stderr_for_missing_event(run_bootstrap, tm
         ],
         capture_output=True,
         text=True,
+        timeout=10,
     )
 
     assert result.returncode != 0
     assert result.stdout == ""
-    assert "No such file" in result.stderr or "does not exist" in result.stderr
+    assert "error: event file not found:" in result.stderr

@@ -22,7 +22,7 @@ def archive_subdir_for_kind(source_kind: str) -> str | None:
         "medication_record": "medications",
         "symptom_note": None,
     }
-    return mapping[source_kind]
+    return mapping.get(source_kind)
 
 
 def should_archive_raw(source_kind: str) -> bool:

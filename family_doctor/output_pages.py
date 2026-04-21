@@ -9,8 +9,8 @@ def build_report_output_markdown(context: ReportTemplateContext) -> str:
     runtime_value = (
         context.related_runtime_id if context.related_runtime_id is not None else "null"
     )
-    source_lines = "\n".join(f"  - {ref}" for ref in context.source_refs) or "  - pending"
-    evidence_lines = "\n".join(f"  - {ref}" for ref in context.evidence_refs) or "  - pending"
+    source_lines = "\n".join(f"  - {ref}" for ref in context.source_refs)
+    evidence_lines = "\n".join(f"  - {ref}" for ref in context.evidence_refs)
 
     return "\n".join(
         [
