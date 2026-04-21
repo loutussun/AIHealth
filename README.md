@@ -27,12 +27,13 @@
 
 当前进行中：
 
-- `Phase 2` 收尾文档与 checkpoint
+- `Phase 3` 设计与 planning 准备
 
 当前尚未开始：
 
 - OCR、即时通讯接入、调度器接入
-- richer trends / writeback / advanced reminder rules
+- `Phase 3` 代码实现
+- advanced reminder rules
 
 ## 核心目录
 
@@ -53,6 +54,12 @@ AIHealth/
 
 - 设计总文档：
   [2026-04-19-family-doctor-skill-design.md](docs/superpowers/specs/2026-04-19-family-doctor-skill-design.md)
+- Agent 执行协作通用约定：
+  [2026-04-21-agent-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-agent-execution-collaboration-agreement.md)
+- 项目执行协作约定：
+  [2026-04-21-project-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-project-execution-collaboration-agreement.md)
+- Phase 3 设计稿：
+  [2026-04-21-family-doctor-phase3-trends-writeback-design.md](docs/superpowers/specs/2026-04-21-family-doctor-phase3-trends-writeback-design.md)
 - Phase 0 实施计划：
   [2026-04-19-family-doctor-phase0-foundation.md](docs/superpowers/plans/2026-04-19-family-doctor-phase0-foundation.md)
 - 当前交接文档：
@@ -126,9 +133,6 @@ python3 scripts/family_doctor/validate_phase0.py --target /tmp/family-health-dem
 
 当前最推荐的直接下一步：
 
-1. 把 `Phase 2` 代码与文档整理成 checkpoint commit
-2. 在 reviewer 配额恢复后补一条 CLI 最终质量留痕
-3. 决定是否进入下一阶段规划：
-   - richer trends / writeback
-   - `needs_review` CLI 回归
-   - 更完整的 reminder rule / plan 体系
+1. 基于 `Phase 3` 设计稿生成 implementation plan
+2. 按 `trend page contract -> trend pipeline -> writeback gate` 顺序推进实现
+3. 在趋势层稳定后，再接 `query / report` 的 trends 消费逻辑
