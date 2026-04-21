@@ -47,7 +47,7 @@ def _item_matches_member(item: Any, member_id: str | None) -> bool:
         return True
     item_member_id = item.get("member_id")
     if item_member_id is None:
-        return True
+        return False
     return item_member_id == member_id
 
 

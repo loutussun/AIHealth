@@ -4,6 +4,9 @@ from pathlib import Path
 import pytest
 
 from family_doctor.ingest_pipeline import load_event, run_ingest_pipeline
+from family_doctor.ingest_models import IngestEvent
+from family_doctor.raw_archive import ArchivedArtifact
+from family_doctor.source_pages import build_source_page_content
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -86,7 +89,7 @@ def test_lab_report_writes_source_page_with_raw_archive_reference(run_bootstrap,
     source_page = target / "02_wiki" / "sources" / "evt_lab_report_001.md"
     assert source_page.exists()
     content = source_page.read_text(encoding="utf-8")
-    assert "source_path: 01_raw/labs/" in content
+    assert 'source_path: "01_raw/labs/' in content
     assert "## 来源信息" in content
     assert "## 提取出的结构化事实" in content
     assert "## 待核实项" in content
@@ -262,3 +265,43 @@ def test_plain_symptom_text_without_symptom_keyword_stays_as_symptom_note(
         artifact["artifact_type"] == "raw_archive" for artifact in result["artifacts"]
     )
     assert not list((target / "01_raw" / "reports").glob("*evt_symptom_note_plain_text_001*"))
+
+
+def test_source_page_frontmatter_quotes_yaml_sensitive_scalars():
+    event = IngestEvent(
+        request_id="req_sensitive",
+        event_id="evt_bad: injected\nfoo: bar",
+        idempotency_key="idem_sensitive",
+        correlation_id="corr_sensitive",
+        causation_id=None,
+        occurred_at="2026-04-21T12:00:00+08:00",
+        event_type="ingest",
+        trigger_mode="user_message",
+        actor_id="user_mom",
+        actor_role="member",
+        member_id="mom:primary",
+        member_hint="mom",
+        match_confidence=1.0,
+        payload_text="报告里写着: ALT #偏高",
+        source_refs=(),
+        attachments=(),
+        context_source="host-runtime",
+        context_locale="zh-CN",
+        context_timezone="Asia/Shanghai",
+        runtime_related_id=None,
+        runtime_review_item_id=None,
+        runtime_dedupe_scope="family-health",
+    )
+    archived_artifacts = [
+        ArchivedArtifact(
+            attachment_id="att:1",
+            path=Path("/tmp/ignored"),
+            relative_path="01_raw/reports/report:1.txt",
+        )
+    ]
+
+    content = build_source_page_content(event, "checkup_report", archived_artifacts)
+
+    assert 'source_id: "evt_bad: injected\\nfoo: bar"' in content
+    assert 'member_id: "mom:primary"' in content
+    assert 'source_path: "01_raw/reports/report:1.txt"' in content

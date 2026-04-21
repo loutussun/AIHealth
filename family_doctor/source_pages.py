@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from family_doctor.ingest_models import IngestEvent
@@ -9,7 +10,7 @@ from family_doctor.raw_archive import ArchivedArtifact, _assert_within_root, _sa
 def _yaml_scalar(value: str | None) -> str:
     if value is None:
         return "null"
-    return value
+    return json.dumps(value, ensure_ascii=False)
 
 
 def _event_date(event: IngestEvent) -> str:
@@ -87,7 +88,7 @@ def build_source_page_content(
     frontmatter = [
         "---",
         "type: source",
-        f"source_id: {event.event_id}",
+        f"source_id: {_yaml_scalar(event.event_id)}",
         f"member_id: {_yaml_scalar(event.member_id)}",
         f"source_kind: {source_kind}",
         f"source_path: {_yaml_scalar(primary_source_path)}",

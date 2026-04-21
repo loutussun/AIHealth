@@ -19,6 +19,7 @@ from family_doctor.wiki_updates import apply_wiki_updates, planned_wiki_page_typ
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_ATTACHMENT_KINDS = {"image", "pdf", "text", "csv", "zip"}
 REVIEW_THRESHOLD = 0.5
+RESUMABLE_PROCESSING_PHASES = {"accepted", "archived_raw", "wrote_source"}
 
 
 class IngestError(ValueError):
@@ -194,7 +195,10 @@ def _is_resumable_current_job(target: Path, event: IngestEvent) -> bool:
         return False
 
     _, record = existing
-    return record.get("status") == "processing" and record.get("phase") == "wrote_source"
+    return (
+        record.get("status") == "processing"
+        and record.get("phase") in RESUMABLE_PROCESSING_PHASES
+    )
 
 
 def _resolve_duplicate_match(

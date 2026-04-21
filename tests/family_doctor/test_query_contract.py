@@ -140,3 +140,26 @@ def test_build_query_context_does_not_fallback_to_legacy_query_fields(
 
     assert context.question == ""
     assert context.intent_hint is None
+
+
+def test_build_query_context_excludes_memberless_items_for_member_targeted_queries(
+    materialize_query_event,
+    tmp_path,
+):
+    event_path = materialize_query_event(
+        tmp_path,
+        question="妈妈最近有什么资料？",
+        intent_hint="recent_records",
+    )
+    event = load_query_event(event_path)
+    event["retrieval"]["sources"] = [
+        {"source_id": "src_mom", "member_id": "mom", "summary": "mom source"},
+        {"source_id": "src_unknown", "summary": "missing member"},
+        {"source_id": "src_dad", "member_id": "dad", "summary": "dad source"},
+    ]
+
+    context = build_query_context(event)
+
+    assert context.retrieval["sources"] == (
+        {"source_id": "src_mom", "member_id": "mom", "summary": "mom source"},
+    )

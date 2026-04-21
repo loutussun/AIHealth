@@ -7,6 +7,8 @@ from pathlib import Path
 
 def safe_slug(value: str) -> str:
     normalized = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-")
+    if normalized and set(normalized) == {"."}:
+        return "item"
     return normalized or "item"
 
 

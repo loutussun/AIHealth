@@ -391,3 +391,103 @@ def test_run_ingest_rerun_same_event_resumes_after_wiki_update_crash(
         "member_page",
         "plan_page",
     }
+
+
+def test_run_ingest_rerun_same_event_resumes_after_archive_crash(
+    monkeypatch, run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_resume_after_archive_crash_001",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    original_archive = ingest_pipeline_module.archive_event_raw_files
+
+    def crash_before_archive(*args, **kwargs):
+        raise RuntimeError("boom before archive")
+
+    monkeypatch.setattr(ingest_pipeline_module, "archive_event_raw_files", crash_before_archive)
+
+    with pytest.raises(RuntimeError, match="boom before archive"):
+        run_ingest_pipeline(event_path, target)
+
+    interrupted_job = json.loads(
+        (
+            target
+            / "99_runtime"
+            / "jobs"
+            / "ingest_job_evt_checkup_resume_after_archive_crash_001.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert interrupted_job["status"] == "processing"
+    assert interrupted_job["phase"] == "accepted"
+
+    monkeypatch.setattr(ingest_pipeline_module, "archive_event_raw_files", original_archive)
+
+    result = run_ingest_pipeline(event_path, target)
+
+    assert result["status"] == "ok"
+    assert "deduplicated" not in result["summary"].lower()
+    resumed_job = json.loads(
+        (
+            target
+            / "99_runtime"
+            / "jobs"
+            / "ingest_job_evt_checkup_resume_after_archive_crash_001.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert resumed_job["status"] == "committed"
+    assert resumed_job["phase"] == "committed"
+
+
+def test_run_ingest_rerun_same_event_resumes_after_source_page_crash(
+    monkeypatch, run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    event_path = _materialize_event(
+        tmp_path,
+        "checkup-report.json",
+        event_id="evt_checkup_resume_after_source_crash_001",
+    )
+    assert run_bootstrap(target).returncode == 0
+
+    original_write_source_page = ingest_pipeline_module.write_source_page
+
+    def crash_before_source(*args, **kwargs):
+        raise RuntimeError("boom before source page")
+
+    monkeypatch.setattr(ingest_pipeline_module, "write_source_page", crash_before_source)
+
+    with pytest.raises(RuntimeError, match="boom before source page"):
+        run_ingest_pipeline(event_path, target)
+
+    interrupted_job = json.loads(
+        (
+            target
+            / "99_runtime"
+            / "jobs"
+            / "ingest_job_evt_checkup_resume_after_source_crash_001.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert interrupted_job["status"] == "processing"
+    assert interrupted_job["phase"] == "archived_raw"
+
+    monkeypatch.setattr(ingest_pipeline_module, "write_source_page", original_write_source_page)
+
+    result = run_ingest_pipeline(event_path, target)
+
+    assert result["status"] == "ok"
+    assert "deduplicated" not in result["summary"].lower()
+    resumed_job = json.loads(
+        (
+            target
+            / "99_runtime"
+            / "jobs"
+            / "ingest_job_evt_checkup_resume_after_source_crash_001.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert resumed_job["status"] == "committed"
+    assert resumed_job["phase"] == "committed"
