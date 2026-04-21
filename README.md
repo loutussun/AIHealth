@@ -58,6 +58,8 @@ AIHealth/
   [2026-04-21-agent-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-agent-execution-collaboration-agreement.md)
 - 项目执行协作约定：
   [2026-04-21-project-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-project-execution-collaboration-agreement.md)
+- Worktree 线程切换与清理约定：
+  [2026-04-22-worktree-thread-switching-and-cleanup-agreement.md](docs/superpowers/specs/2026-04-22-worktree-thread-switching-and-cleanup-agreement.md)
 - Phase 3 设计稿：
   [2026-04-21-family-doctor-phase3-trends-writeback-design.md](docs/superpowers/specs/2026-04-21-family-doctor-phase3-trends-writeback-design.md)
 - Phase 0 实施计划：
