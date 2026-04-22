@@ -2,133 +2,110 @@
 
 一个基于 `LLM Wiki` 方法构建的家庭健康管理项目。
 
-当前仓库的目标，不是做一个单次问答机器人，而是逐步构建一套可持续维护的家庭健康知识系统：
+当前主线只围绕一个对外 skill：
 
-- `family-doctor` 作为唯一外部 skill 入口
-- `family-health/` 作为 canonical 家庭健康 wiki 骨架
-- `scripts/family_doctor/` 提供 bootstrap 和 validation 工具链
-- `docs/superpowers/` 保存设计、计划、交接和恢复文档
+- `family-doctor`
 
-## 当前状态
+宿主形态：
 
-当前已完成：
+- `codex/openclaw -> family-doctor -> input_event/output_result`
 
-- 核心设计文档
-- `Phase 0 foundation`
-- canonical `family-health/` scaffold
-- `bootstrap_vault.py`
-- `validate_phase0.py`
-- Phase 0 自动化测试基线
-- Git / GitHub 基线与 `Phase 0 CI`
-- `Phase 1 ingest MVP`
-- `Phase 2 query / report / reminder` 核心实现
-- `Phase 2 thin CLI`
-- `Phase 2` family_doctor 回归套件
+## 当前主交付
 
-当前进行中：
+当前稳定主线固定为已提交且已验证的 `d2038f4`，主交付是 `family-doctor` skill core：
 
-- `Phase 2` 收尾文档与 checkpoint
+- `ingest`
+- `query`
+- `report`
+- `reminder`
+- `scripts/family_doctor/run_skill.py` 统一宿主入口
 
-当前尚未开始：
+补充说明：
 
-- OCR、即时通讯接入、调度器接入
-- richer trends / writeback / advanced reminder rules
+- `run_ingest.py`、`run_query.py`、`run_report.py`、`run_reminder.py` 只作为开发/调试入口
+- 当前不把 CLI 描述为产品最终形态
 
-## 核心目录
+## 当前不属于主线
 
-```text
-AIHealth/
-├── docs/superpowers/
-│   ├── specs/
-│   ├── plans/
-│   ├── handoffs/
-│   └── backups/
-├── family-health/
-├── scripts/family_doctor/
-├── tests/family_doctor/
-└── ai-health-vault/   # 外部参考仓，当前主仓已排除版本管理
-```
+以下内容不应写成当前主交付：
+
+- 即时通讯接入
+- 独立 `scheduler / bot`
+- 自动设备同步
+- `visit_brief`
+- `trend_build`
+- 未提交 `Phase 3 trends`
 
 ## 必读文档
 
-- 设计总文档：
-  [2026-04-19-family-doctor-skill-design.md](docs/superpowers/specs/2026-04-19-family-doctor-skill-design.md)
-- Phase 0 实施计划：
-  [2026-04-19-family-doctor-phase0-foundation.md](docs/superpowers/plans/2026-04-19-family-doctor-phase0-foundation.md)
-- 当前交接文档：
-  [2026-04-20-family-doctor-project-handoff.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-handoff.md)
-- Phase 1 完成说明：
-  [2026-04-21-family-doctor-phase1-ingest-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase1-ingest-completion.md)
-- Phase 2 完成说明：
-  [2026-04-21-family-doctor-phase2-query-report-reminder-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase2-query-report-reminder-completion.md)
-- 当前最新快照：
-  [2026-04-21-family-doctor-project-snapshot-phase2.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot-phase2.md)
-- 之前的 Phase 1 快照：
-  [2026-04-21-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot.md)
-- 上一版快照：
-  [2026-04-20-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
-- 下一阶段 planning：
-  [2026-04-21-family-doctor-phase2-query-report-reminder.md](docs/superpowers/plans/2026-04-21-family-doctor-phase2-query-report-reminder.md)
+以下文档是当前项目状态的真相源，按顺序阅读：
 
-## 本地验证
+1. [2026-04-19-family-doctor-skill-design.md](docs/superpowers/specs/2026-04-19-family-doctor-skill-design.md)
+2. [2026-04-21-project-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-project-execution-collaboration-agreement.md)
+3. [2026-04-22-family-doctor-skill-realignment.md](docs/superpowers/plans/2026-04-22-family-doctor-skill-realignment.md)
+4. [2026-04-22-family-doctor-skill-realignment-handoff.md](docs/superpowers/handoffs/2026-04-22-family-doctor-skill-realignment-handoff.md)
+5. [2026-04-22-family-doctor-project-snapshot-skill-realignment.md](docs/superpowers/handoffs/2026-04-22-family-doctor-project-snapshot-skill-realignment.md)
 
-### 1. 校验 canonical scaffold
+## Skill 使用
+
+统一入口：
 
 ```bash
-python3 scripts/family_doctor/validate_phase0.py --target /Users/loutussun/Documents/codex/AIHealth/family-health
+python3 /absolute/path/to/AIHealth/scripts/family_doctor/run_skill.py --event /absolute/path/to/event.json
 ```
 
-### 2. 运行当前 family_doctor 回归套件
-
-当前环境默认没有可直接调用的 `pytest` 命令，统一使用：
+`ingest`、`report`、`reminder` 需要 vault root：
 
 ```bash
-PYTHONPATH=. uv run pytest \
-  tests/family_doctor/test_query_pipeline.py \
-  tests/family_doctor/test_query_contract.py \
-  tests/family_doctor/test_report_pipeline.py \
-  tests/family_doctor/test_report_outputs.py \
-  tests/family_doctor/test_reminder_pipeline.py \
-  tests/family_doctor/test_reminder_runtime.py \
-  tests/family_doctor/test_query_cli.py \
-  tests/family_doctor/test_report_cli.py \
-  tests/family_doctor/test_reminder_cli.py \
-  tests/family_doctor/test_run_ingest_cli.py \
-  tests/family_doctor/test_ingest_acceptance.py \
-  tests/family_doctor/test_wiki_updates.py \
-  tests/family_doctor/test_source_pages.py \
-  tests/family_doctor/test_ingest_pipeline.py \
-  tests/family_doctor/test_output_contract.py \
-  tests/family_doctor/test_phase1_regression_smoke.py -q
+python3 /absolute/path/to/AIHealth/scripts/family_doctor/run_skill.py \
+  --event /absolute/path/to/event.json \
+  --target /absolute/path/to/family-health-vault
 ```
 
-## Bootstrap 新 vault
+`query` 不要求 CLI `--target`。
 
-将 canonical `family-health/` scaffold 复制到任意目录：
+## 当前支持范围
+
+`event_type`：
+
+- `ingest`
+- `query`
+- `report`
+- `reminder`
+
+`report_kind`：
+
+- `checkup_update`
+- `lab_update`
+- `weekly_health_report`
+- `monthly_health_report`
+
+`reminder_action`：
+
+- `generate`
+- `confirm`
+- `escalate`
+
+## 稳定基线验证
+
+稳定基线验证口径：
 
 ```bash
-python3 scripts/family_doctor/bootstrap_vault.py --target /tmp/family-health-demo
-python3 scripts/family_doctor/validate_phase0.py --target /tmp/family-health-demo
+git worktree add /tmp/aihealth-check d2038f4
+cd /tmp/aihealth-check
+python3 scripts/family_doctor/validate_phase0.py --target ./family-health
+PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q
 ```
 
-## GitHub 基线
+结果：
 
-当前仓库已补齐最小基础设施：
+- `validate_phase0` 通过
+- `115 passed`
 
-- 根目录 `README.md`
-- Phase 0 CI：
-  - `.github/workflows/phase0-ci.yml`
-- 协作模板：
-  - `.github/ISSUE_TEMPLATE/bug_report.md`
-  - `.github/pull_request_template.md`
+## 本轮 skill 包装验证
 
-## 下一步
+当前隔离 worktree 的 skill 包装实现已验证：
 
-当前最推荐的直接下一步：
-
-1. 把 `Phase 2` 代码与文档整理成 checkpoint commit
-2. 在 reviewer 配额恢复后补一条 CLI 最终质量留痕
-3. 决定是否进入下一阶段规划：
-   - richer trends / writeback
-   - `needs_review` CLI 回归
-   - 更完整的 reminder rule / plan 体系
+- `python3 scripts/family_doctor/validate_phase0.py --target ./family-health` 通过
+- `PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q` 结果 `133 passed`
+- 从非 repo cwd 使用绝对路径调用 `run_skill.py` 的 `query` / `ingest` 已实测可用
