@@ -58,10 +58,12 @@ def test_symptom_ingest_creates_member_and_plan_pages(run_bootstrap, tmp_path):
     assert source_page.exists()
 
     member_content = member_page.read_text(encoding="utf-8")
-    assert "## 最近资料" in member_content
+    assert "## 来源索引" in member_content
     assert "evt_symptom_note_member_001.md" in member_content
     assert "## 待核实项" in member_content
     assert "待核实" in member_content
+    assert "## 当前计划" in member_content
+    assert "dad.md" in member_content
 
     plan_content = plan_page.read_text(encoding="utf-8")
     assert "## 待复查事项" in plan_content
@@ -88,6 +90,8 @@ def test_medication_ingest_creates_medication_page_and_links_member(run_bootstra
     member_content = member_page.read_text(encoding="utf-8")
     assert "## 当前用药" in member_content
     assert "medication-photo.md" in member_content
+    assert "## 来源索引" in member_content
+    assert "evt_medication_photo_001.md" in member_content
 
     medication_content = medication_page.read_text(encoding="utf-8")
     assert "# medication-photo" in medication_content

@@ -91,7 +91,10 @@ def test_lab_report_writes_source_page_with_raw_archive_reference(run_bootstrap,
     content = source_page.read_text(encoding="utf-8")
     assert 'source_path: "01_raw/labs/' in content
     assert "## 来源信息" in content
-    assert "## 提取出的结构化事实" in content
+    assert "## 提取事实" in content
+    assert "## 异常项" in content
+    assert "## 影响到的 Wiki 页面" in content
+    assert "02_wiki/members/dad.md" in content
     assert "## 待核实项" in content
     assert any(
         artifact["artifact_type"] == "source_page" and artifact["path"] == str(source_page)
@@ -305,3 +308,6 @@ def test_source_page_frontmatter_quotes_yaml_sensitive_scalars():
     assert 'source_id: "evt_bad: injected\\nfoo: bar"' in content
     assert 'member_id: "mom:primary"' in content
     assert 'source_path: "01_raw/reports/report:1.txt"' in content
+    assert "02_wiki/members/mom-primary.md" in content
+    assert "02_wiki/plans/mom-primary.md" in content
+    assert "02_wiki/members/mom:primary.md" not in content

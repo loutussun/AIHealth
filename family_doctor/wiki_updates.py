@@ -34,7 +34,7 @@ def _member_page_content(member_id: str, display_name: str) -> str:
             "",
             "## 成员识别与代理关系",
             "",
-            "## 慢性病与重要问题",
+            "## 重要病史",
             "",
             "## 过敏史与禁忌",
             "",
@@ -42,13 +42,13 @@ def _member_page_content(member_id: str, display_name: str) -> str:
             "",
             "## 最近关键指标",
             "",
-            "## 待处理事项",
+            "## 近期就医/检查",
             "",
-            "## 最近资料",
-            "",
-            "## 关联页面",
+            "## 当前计划",
             "",
             "## 待核实项",
+            "",
+            "## 来源索引",
             "",
         ]
     )
@@ -167,7 +167,7 @@ def apply_wiki_updates(
     member_lines = [
         _source_page_line(member_page, source_page_path),
     ]
-    if append_lines_under_heading(member_page, "## 最近资料", member_lines):
+    if append_lines_under_heading(member_page, "## 来源索引", member_lines):
         _append_update_once(updates, member_page, target, "member_page", event.event_id)
 
     verification_line = (
@@ -197,6 +197,13 @@ def apply_wiki_updates(
         ) or changed
         if changed:
             _append_update_once(updates, plan_page, target, "plan_page", event.event_id)
+
+        if append_lines_under_heading(
+            member_page,
+            "## 当前计划",
+            [_page_line(member_page, plan_page, f"{event.member_id} 计划")],
+        ):
+            _append_update_once(updates, member_page, target, "member_page", event.event_id)
 
     if source_kind == "medication_record":
         medication_stub = _derive_medication_stub(event)
@@ -245,13 +252,6 @@ def apply_wiki_updates(
                         "名称/剂量待核实）"
                     )
                 ],
-            ):
-                _append_update_once(updates, member_page, target, "member_page", event.event_id)
-
-            if append_lines_under_heading(
-                member_page,
-                "## 关联页面",
-                [_page_line(member_page, medication_page, display_name)],
             ):
                 _append_update_once(updates, member_page, target, "member_page", event.event_id)
 

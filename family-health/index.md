@@ -5,45 +5,62 @@ scope: family-health
 
 # 家庭健康中心
 
-这是 `family-health` 的 canonical 导航页。这里不存业务逻辑，只提供稳定入口、占位结构和后续 ingest 的落点。
+这是给 LLM 和维护者看的导航索引。给家庭成员直接阅读的入口是 [[家庭健康管理中心]]。
 
-## 成员索引
+## 人类入口
 
-- 待后续 ingest 生成成员主档索引
-- 示例成员 `dad`：等待 `02_wiki/members/` 下的正式页面
+- [[家庭健康管理中心]]
+- 最近可发送给家人的摘要：`03_outputs/family-messages/`
+- 就医准备材料：`03_outputs/visit-briefs/`
 
-## 当前活跃问题
+## 成员
 
-- 待后续 ingest 生成活跃问题列表
-- 任何低置信度成员识别、冲突结论或高风险事项都应在这里有占位入口
+- 成员档案：`02_wiki/members/`
+- 成员注册规则：`00_schema/members.md`
+- 低置信度成员识别必须进入人工复核。
 
-## 近期新增资料
+## 原始资料
 
-- 待后续 ingest 生成最新入库资料清单
-- `01_raw/reports/`、`01_raw/labs/`、`01_raw/visits/` 的新增内容应优先汇总在此
+- 体检报告：`01_raw/reports/`
+- 化验资料：`01_raw/labs/`
+- 用药资料：`01_raw/medications/`
+- 饮食记录：`01_raw/diets/`
+- 运动记录：`01_raw/exercise/`
+- 睡眠记录：`01_raw/sleep/`
+- 就医记录：`01_raw/visits/`
+- 附件：`01_raw/attachments/`
 
-## 重点趋势页
+## Wiki 页面
 
-- 待后续 ingest 生成趋势索引
-- `02_wiki/trends/` 用于跟踪关键指标、慢病演化与行为变化
+- 来源摘要：`02_wiki/sources/`
+- 健康问题：`02_wiki/conditions/`
+- 用药知识：`02_wiki/medications/`
+- 时间线：`02_wiki/timelines/`
+- 趋势页：`02_wiki/trends/`
+- 计划页：`02_wiki/plans/`
 
-## 重点计划页
+## 输出
 
-- 待后续 ingest 生成计划索引
-- `02_wiki/plans/` 用于复查、行动与提醒联动
-
-## 近期输出
-
+- 体检更新：`03_outputs/checkup-updates/`
+- 化验更新：`03_outputs/lab-updates/`
+- 就医准备：`03_outputs/visit-briefs/`
+- 家庭沟通：`03_outputs/family-messages/`
 - 周报：`03_outputs/weekly-reports/`
 - 月报：`03_outputs/monthly-reports/`
-- 就医准备：`03_outputs/visit-briefs/`
 - 提醒文案：`03_outputs/reminder-messages/`
 - QA 摘要：`03_outputs/qa-summaries/`
 
-## 结构入口
+## Tracking CSV
 
-- `00_schema/`: 规则、注册表与模板
-- `01_raw/`: 原始资料
-- `02_wiki/`: 长期知识层
-- `03_outputs/`: 面向消费的成品
+- 体检指标：`04_tracking/体检指标.csv`
+- 用药打卡：`04_tracking/用药打卡.csv`
+- 饮食记录：`04_tracking/饮食记录.csv`
+- 运动记录：`04_tracking/运动记录.csv`
+- 睡眠记录：`04_tracking/睡眠记录.csv`
+
+## Runtime
+
 - `99_runtime/`: 运行过程状态
+- `99_runtime/jobs/`: 作业记录
+- `99_runtime/state/`: 幂等、复核和去重状态
+- `99_runtime/traces/`: 调试追踪

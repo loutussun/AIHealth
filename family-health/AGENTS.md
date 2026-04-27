@@ -20,16 +20,21 @@
 
 ## 分层约束
 
+- `policy: vault-product-surface` Vault 是产品界面；CLI、JSON 和 runtime job 只是维护它的机械层。
 - `01_raw/` 只存原始资料，不回写、不改写
+- `policy: raw-append-only` `01_raw/` append-only；LLM 不得改写、覆盖或删除原始证据。
 - `02_wiki/` 存长期知识与编译结果
 - `03_outputs/` 存可发送、可复用的成品
 - `99_runtime/` 存运行过程状态，不作为兜底杂物层
+- `policy: runtime-process-state` `99_runtime/` 是过程状态，不是用户主要阅读的长期知识库。
 - `00_schema/` 存规则、注册表和模板
+- `policy: tracking-preserve-headers` `04_tracking/` 是结构化追踪数据；更新时必须保留表头，只能按约定追加或更正记录。
 
 ## 更新规则
 
 - 优先新增页面和增量更新，不直接覆盖证据原件
 - 所有可回写内容都应能追溯到 `01_raw/` 或明确的上下文来源
+- `policy: source-grounded-medical-assertions` 每条有意义的医学判断必须有来源；没有来源时必须进入待核实项。
 - 涉及冲突、缺失、模糊识别或高风险判断时，必须生成 `review_item`
 - `log.md` 记录关键操作，保持 append-only
 
