@@ -27,10 +27,13 @@ REQUIRED_DIRS = [
     "02_wiki/timelines",
     "02_wiki/trends",
     "02_wiki/plans",
+    "04_tracking",
     "03_outputs/checkup-updates",
+    "03_outputs/lab-updates",
     "03_outputs/weekly-reports",
     "03_outputs/monthly-reports",
     "03_outputs/visit-briefs",
+    "03_outputs/family-messages",
     "03_outputs/reminder-messages",
     "03_outputs/qa-summaries",
     "99_runtime/inbox",
@@ -47,6 +50,13 @@ REQUIRED_MARKDOWN_MARKERS = {
     "00_schema/members.md": ["# 成员注册规则", "## 成员识别护栏"],
     "00_schema/reporting-rules.md": ["# 报告生成规则", "## 输出要求"],
     "00_schema/reminder-rules.md": ["# 提醒生成规则", "## 交付要求"],
+    "家庭健康管理中心.md": [
+        "# 家庭健康管理中心",
+        "[[index]]",
+        "[[log]]",
+        "02_wiki/members",
+        "04_tracking/体检指标.csv",
+    ],
 }
 
 TEMPLATE_MARKERS = {
@@ -72,6 +82,28 @@ TEMPLATE_MARKERS = {
         "## 提醒内容",
         "## 运行时映射",
     ],
+    "family-message-template.md": [
+        "type: output",
+        "output_kind: family_message",
+        "## 可发送版本",
+        "## 证据来源",
+        "## 待核实项",
+    ],
+    "visit-brief-template.md": [
+        "type: output",
+        "output_kind: visit_brief",
+        "## 就诊目标",
+        "## 证据来源",
+        "## 待核实项",
+    ],
+}
+
+EXPECTED_TRACKING_HEADERS = {
+    "04_tracking/体检指标.csv": "member_id,date,item,result,unit,reference_range,status,source_ref,notes",
+    "04_tracking/用药打卡.csv": "member_id,date,time,medication_id,dose,status,source_ref,notes",
+    "04_tracking/饮食记录.csv": "member_id,date,meal,summary,tags,source_ref,notes",
+    "04_tracking/运动记录.csv": "member_id,date,activity,duration_minutes,intensity,source_ref,notes",
+    "04_tracking/睡眠记录.csv": "member_id,date,sleep_start,sleep_end,duration_hours,quality,source_ref,notes",
 }
 
 EXPECTED_REQUIRED_TOP_LEVEL_KEYS = {
@@ -261,6 +293,28 @@ def validate_templates(target: Path) -> list[str]:
         for marker in markers:
             if marker not in content:
                 errors.append(f"Template {filename} missing marker: {marker}")
+
+    return errors
+
+
+def validate_tracking_csvs(target: Path) -> list[str]:
+    errors: list[str] = []
+
+    for relative_path, expected_header in EXPECTED_TRACKING_HEADERS.items():
+        path = target / relative_path
+        if not path.exists():
+            errors.append(f"Missing tracking CSV file: {relative_path}")
+            continue
+        if not path.is_file():
+            errors.append(f"Tracking CSV path is not a file: {relative_path}")
+            continue
+
+        first_line = path.read_text(encoding="utf-8").splitlines()
+        actual_header = first_line[0] if first_line else ""
+        if actual_header != expected_header:
+            errors.append(
+                f"Tracking CSV {relative_path} must start with header: {expected_header}"
+            )
 
     return errors
 
@@ -825,6 +879,7 @@ def validate_phase0(target: Path) -> list[str]:
     errors.extend(validate_directory_topology(target))
     errors.extend(validate_required_markdown_assets(target))
     errors.extend(validate_templates(target))
+    errors.extend(validate_tracking_csvs(target))
 
     event_schema_path = target / "00_schema" / "event-schema.json"
     runtime_entities_path = target / "00_schema" / "runtime-entities.json"
