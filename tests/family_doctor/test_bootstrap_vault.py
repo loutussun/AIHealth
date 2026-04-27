@@ -8,6 +8,30 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP = ROOT / "scripts" / "family_doctor" / "bootstrap_vault.py"
 
+EXPECTED_TRACKING_FILES = [
+    "体检指标.csv",
+    "用药打卡.csv",
+    "饮食记录.csv",
+    "运动记录.csv",
+    "睡眠记录.csv",
+]
+
+EXPECTED_OUTPUT_DIRECTORIES = [
+    "checkup-updates",
+    "lab-updates",
+    "visit-briefs",
+    "family-messages",
+    "weekly-reports",
+    "monthly-reports",
+    "reminder-messages",
+    "qa-summaries",
+]
+
+EXPECTED_PAGE_TEMPLATES = [
+    "family-message-template.md",
+    "visit-brief-template.md",
+]
+
 
 def load_bootstrap_module():
     spec = importlib.util.spec_from_file_location("bootstrap_vault_test_module", BOOTSTRAP)
@@ -23,9 +47,19 @@ def test_bootstrap_copies_full_phase0_topology(run_bootstrap, tmp_path):
 
     assert result.returncode == 0
     assert (target / "00_schema" / "event-schema.json").exists()
+    assert (target / "家庭健康管理中心.md").exists()
     assert (target / "02_wiki" / "members").exists()
     assert (target / "99_runtime" / "jobs").exists()
     assert not (target / "family-health").exists()
+
+    for filename in EXPECTED_TRACKING_FILES:
+        assert (target / "04_tracking" / filename).exists(), filename
+
+    for directory in EXPECTED_OUTPUT_DIRECTORIES:
+        assert (target / "03_outputs" / directory).is_dir(), directory
+
+    for filename in EXPECTED_PAGE_TEMPLATES:
+        assert (target / "00_schema" / "page-templates" / filename).exists(), filename
 
 
 def test_bootstrap_is_idempotent(run_bootstrap, tmp_path):

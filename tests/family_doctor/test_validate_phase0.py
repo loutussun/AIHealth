@@ -1,8 +1,35 @@
 import json
+import shutil
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+EXPECTED_TRACKING_HEADERS = {
+    "04_tracking/体检指标.csv": "member_id,date,item,result,unit,reference_range,status,source_ref,notes",
+    "04_tracking/用药打卡.csv": "member_id,date,time,medication_id,dose,status,source_ref,notes",
+    "04_tracking/饮食记录.csv": "member_id,date,meal,summary,tags,source_ref,notes",
+    "04_tracking/运动记录.csv": "member_id,date,activity,duration_minutes,intensity,source_ref,notes",
+    "04_tracking/睡眠记录.csv": "member_id,date,sleep_start,sleep_end,duration_hours,quality,source_ref,notes",
+}
+
+EXPECTED_OUTPUT_DIRECTORIES = [
+    "03_outputs/checkup-updates",
+    "03_outputs/lab-updates",
+    "03_outputs/visit-briefs",
+    "03_outputs/family-messages",
+    "03_outputs/weekly-reports",
+    "03_outputs/monthly-reports",
+    "03_outputs/reminder-messages",
+    "03_outputs/qa-summaries",
+]
+
+EXPECTED_PAGE_TEMPLATES = [
+    "00_schema/page-templates/family-message-template.md",
+    "00_schema/page-templates/visit-brief-template.md",
+]
 
 
 def test_validate_accepts_bootstrapped_phase0_vault(run_bootstrap, run_validate, tmp_path):
@@ -54,6 +81,98 @@ def test_validate_rejects_missing_core_markdown_assets(run_bootstrap, run_valida
 
     assert result.returncode == 1
     assert "AGENTS.md" in result.stderr
+
+
+def test_validate_rejects_missing_family_health_home_page(
+    run_bootstrap, run_validate, tmp_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    home = target / "家庭健康管理中心.md"
+    home.write_text(
+        "# 家庭健康管理中心\n\n- [[index]]\n- [[log]]\n",
+        encoding="utf-8",
+    )
+    assert home.exists()
+    home.unlink()
+
+    result = run_validate(target)
+
+    assert result.returncode == 1
+    assert "家庭健康管理中心.md" in result.stderr
+
+
+@pytest.mark.parametrize("relative_path", EXPECTED_TRACKING_HEADERS)
+def test_validate_rejects_missing_tracking_csv(
+    run_bootstrap, run_validate, tmp_path, relative_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    csv_path = target / relative_path
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    csv_path.write_text(f"{EXPECTED_TRACKING_HEADERS[relative_path]}\n", encoding="utf-8")
+    assert csv_path.exists()
+    csv_path.unlink()
+
+    result = run_validate(target)
+
+    assert result.returncode == 1
+    assert relative_path in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "expected_header"), EXPECTED_TRACKING_HEADERS.items()
+)
+def test_validate_rejects_tracking_csv_header_drift(
+    run_bootstrap, run_validate, tmp_path, relative_path, expected_header
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    csv_path = target / relative_path
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    csv_path.write_text("member_id,date,item,result\n", encoding="utf-8")
+
+    result = run_validate(target)
+
+    assert result.returncode == 1
+    assert relative_path in result.stderr
+    assert expected_header in result.stderr
+
+
+@pytest.mark.parametrize("relative_path", EXPECTED_OUTPUT_DIRECTORIES)
+def test_validate_rejects_missing_obsidian_first_output_directories(
+    run_bootstrap, run_validate, tmp_path, relative_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    missing_dir = target / relative_path
+    missing_dir.mkdir(parents=True, exist_ok=True)
+    (missing_dir / ".gitkeep").write_text("", encoding="utf-8")
+    assert missing_dir.is_dir()
+    shutil.rmtree(missing_dir)
+
+    result = run_validate(target)
+
+    assert result.returncode == 1
+    assert relative_path in result.stderr
+
+
+@pytest.mark.parametrize("relative_path", EXPECTED_PAGE_TEMPLATES)
+def test_validate_rejects_missing_obsidian_first_page_templates(
+    run_bootstrap, run_validate, tmp_path, relative_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    template_path = target / relative_path
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    template_path.write_text("---\ntype: template\n---\n", encoding="utf-8")
+    assert template_path.exists()
+    template_path.unlink()
+
+    result = run_validate(target)
+
+    assert result.returncode == 1
+    assert relative_path in result.stderr
 
 
 def test_validate_rejects_incomplete_event_contract(run_bootstrap, run_validate, tmp_path):
