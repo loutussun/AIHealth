@@ -35,6 +35,19 @@ def _workflow_section(text: str, workflow: str) -> str:
     return text[start:end]
 
 
+def _heading_section(text: str, heading: str) -> str:
+    heading_pattern = re.compile(rf"(?m)^(#+)\s+{re.escape(heading)}\s*$")
+    heading_match = heading_pattern.search(text)
+    assert heading_match is not None, f"missing heading: {heading}"
+
+    start = heading_match.start()
+    heading_level = len(heading_match.group(1))
+    next_heading_pattern = re.compile(rf"(?m)^#{{1,{heading_level}}}\s+")
+    next_heading_match = next_heading_pattern.search(text, heading_match.end())
+    end = next_heading_match.start() if next_heading_match else len(text)
+    return text[start:end]
+
+
 def test_skill_docs_define_obsidian_first_workflows() -> None:
     markers = [
         "Obsidian-first",
@@ -64,12 +77,15 @@ def test_skill_docs_map_workflows_to_existing_event_types() -> None:
 
 
 def test_skill_docs_lock_direct_write_boundaries() -> None:
-    markers = [
+    allowed_direct_writes = [
         "03_outputs/visit-briefs/",
         "03_outputs/family-messages/",
         "03_outputs/qa-summaries/",
         "04_tracking/*.csv",
         "log.md",
+    ]
+    markers = [
+        *allowed_direct_writes,
         "Do not directly write 01_raw/",
         "Do not directly write 02_wiki/sources/",
         "Do not directly write 02_wiki/members/",
@@ -79,7 +95,23 @@ def test_skill_docs_lock_direct_write_boundaries() -> None:
     ]
 
     for path in SKILL_DOCS:
-        _assert_markers_present(_read(path), markers, path)
+        content = _read(path)
+        _assert_markers_present(content, markers, path)
+
+        section = _heading_section(content, "Direct write boundaries")
+        allowed_match = re.search(
+            r"(?ms)^Allowed direct writes:\s*(.*?)^Forbidden direct writes:",
+            section,
+        )
+        assert allowed_match is not None, f"{path} missing allowed direct writes block"
+        listed_paths = [
+            item.strip().strip("`")
+            for item in re.findall(r"(?m)^-\s+(.+?)\s*$", allowed_match.group(1))
+        ]
+        assert listed_paths == allowed_direct_writes, (
+            f"{path} allowed direct writes must be exactly {allowed_direct_writes}, "
+            f"got {listed_paths}"
+        )
 
 
 def test_skill_docs_lock_health_question_evidence_rules() -> None:
@@ -101,6 +133,9 @@ def test_skill_docs_lock_health_question_evidence_rules() -> None:
         "member uncertainty",
         "missing units or reference ranges",
         "urgent symptoms",
+        "high-risk",
+        "care-seeking guidance",
+        "must not diagnose",
         "medication change request",
         "diagnosis request",
     ]

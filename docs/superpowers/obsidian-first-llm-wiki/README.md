@@ -21,13 +21,13 @@
 ## 分支与目录约定
 
 - `origin/main` / `6975fae`：当前干净基线，包含 `family-doctor` skill wrapper。
-- `codex/obsidian-first-vault-contract`：Obsidian-first Phase A 实施分支，只做 vault contract。
+- `codex/obsidian-first-vault-contract`：Obsidian-first Phase A/B 实施分支，已完成 vault contract 与 skill/prompt workflow contract。
 - `codex/phase3-trends-writeback`：历史 Phase 3 trends 候选区，不作为当前主线。
 - `/Users/loutussun/Documents/codex/AIHealth`：当前原工作区，保留候选和历史上下文，不继续叠加 Phase A 实现。
-- `/Users/loutussun/.config/superpowers/worktrees/AIHealth/obsidian-first-vault-contract`：Phase A 干净工作区。
+- `/Users/loutussun/.config/superpowers/worktrees/AIHealth/obsidian-first-vault-contract`：Phase A/B 干净工作区。
 
 清理原则：
 
 - 不在原工作区直接 reset 或删除候选文件。
-- Phase A 的所有实现和验证先在干净 worktree 完成。
+- Obsidian-first 回正的所有实现和验证先在干净 worktree 完成。
 - Phase 3 趋势能力后续如需接回，必须在 Obsidian-first 设计下另立计划。

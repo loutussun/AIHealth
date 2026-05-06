@@ -1,6 +1,6 @@
 # Phase B Workflow Contract Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]` / `- [x]`) syntax for tracking.
 
 **Goal:** Update the `family-doctor` skill documentation so host agents choose Obsidian-first user-intent workflows before mapping to the existing low-level `event_type` core.
 
@@ -110,7 +110,7 @@ Direct host-LLM writes are allowed only when the user explicitly requests an art
 
 - Create: `tests/family_doctor/test_skill_workflow_contract_docs.py`
 
-- [ ] **Step 1: Create test helpers that read both skill docs**
+- [x] **Step 1: Create test helpers that read both skill docs**
 
 Use exact paths:
 
@@ -143,7 +143,7 @@ def _workflow_section(text: str, workflow: str) -> str:
     return text[start:end]
 ```
 
-- [ ] **Step 2: Add test for required workflows**
+- [x] **Step 2: Add test for required workflows**
 
 Add:
 
@@ -164,7 +164,7 @@ def test_skill_docs_define_obsidian_first_workflows():
             assert workflow in content, f"{doc}: {workflow}"
 ```
 
-- [ ] **Step 3: Add test for mapping to current low-level core**
+- [x] **Step 3: Add test for mapping to current low-level core**
 
 Add:
 
@@ -184,7 +184,7 @@ def test_skill_docs_map_workflows_to_existing_event_types():
             assert marker in content, f"{doc}: {marker}"
 ```
 
-- [ ] **Step 4: Add test for write boundary**
+- [x] **Step 4: Add test for write boundary**
 
 Add:
 
@@ -212,7 +212,21 @@ def test_skill_docs_lock_direct_write_boundaries():
             assert marker in content, f"{doc}: {marker}"
 ```
 
-- [ ] **Step 5: Add test for `health_question` evidence rules**
+Final implementation also parses the `Allowed direct writes:` block and asserts it is exactly:
+
+```python
+[
+    "03_outputs/visit-briefs/",
+    "03_outputs/family-messages/",
+    "03_outputs/qa-summaries/",
+    "04_tracking/*.csv",
+    "log.md",
+]
+```
+
+This prevents future docs from adding extra direct-write targets while keeping the forbidden markers.
+
+- [x] **Step 5: Add test for `health_question` evidence rules**
 
 Add:
 
@@ -233,6 +247,9 @@ def test_skill_docs_lock_health_question_evidence_rules():
         "member uncertainty",
         "missing units or reference ranges",
         "urgent symptoms",
+        "high-risk",
+        "care-seeking guidance",
+        "must not diagnose",
         "medication change request",
         "diagnosis request",
     ]
@@ -244,7 +261,7 @@ def test_skill_docs_lock_health_question_evidence_rules():
             assert marker in section, f"{doc}: {marker}"
 ```
 
-- [ ] **Step 6: Add test that Phase B docs do not claim unsupported routes**
+- [x] **Step 6: Add test that Phase B docs do not claim unsupported routes**
 
 Add:
 
@@ -269,7 +286,7 @@ def test_skill_docs_do_not_claim_new_cli_routes():
             assert marker not in content, f"{doc}: {marker}"
 ```
 
-- [ ] **Step 7: Add test for per-workflow operational contract**
+- [x] **Step 7: Add test for per-workflow operational contract**
 
 Add:
 
@@ -332,7 +349,7 @@ def test_skill_docs_lock_per_workflow_operational_contracts():
                 assert marker in section, f"{doc}: {workflow}: {marker}"
 ```
 
-- [ ] **Step 8: Add test that docs do not contain contradictory route claims**
+- [x] **Step 8: Add test that docs do not contain contradictory route claims**
 
 Add:
 
@@ -353,7 +370,7 @@ def test_skill_docs_do_not_contradict_route_boundaries():
             assert phrase not in content, f"{doc}: {phrase}"
 ```
 
-- [ ] **Step 9: Run the new tests and verify RED**
+- [x] **Step 9: Run the new tests and verify RED**
 
 Run:
 
@@ -363,7 +380,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_skill_workflow
 
 Expected: FAIL because current skill docs only list low-level event types.
 
-- [ ] **Step 10: Commit red tests**
+- [x] **Step 10: Commit red tests**
 
 Run:
 
@@ -378,7 +395,7 @@ git commit -m "test: define family doctor workflow skill contract"
 
 - Modify: `.codex/skills/family-doctor/SKILL.md`
 
-- [ ] **Step 1: Rewrite the role summary**
+- [x] **Step 1: Rewrite the role summary**
 
 Make the top of the doc say:
 
@@ -388,7 +405,7 @@ Make the top of the doc say:
 Use `family-doctor` as an Obsidian-first family health wiki maintainer. The vault is the product surface; Python routes are mechanical helpers.
 ```
 
-- [ ] **Step 2: Add `Obsidian-first workflows` section**
+- [x] **Step 2: Add `Obsidian-first workflows` section**
 
 Include all five workflows in a summary table:
 
@@ -408,7 +425,7 @@ Choose the user-intent workflow first, then map it to the current low-level core
 
 The summary table is not enough for Task 1 tests. The doc must also contain independent Markdown headings for each workflow so tests can scope operational markers to the right workflow section. Do not add empty placeholder workflow headings here; Step 5 provides the real `### ingest_report`, `### medical_visit_prep`, `### family_message`, and `### daily_tracking_update` sections with their markers inside.
 
-- [ ] **Step 3: Add write-boundary section**
+- [x] **Step 3: Add write-boundary section**
 
 Include exact marker strings from Task 1:
 
@@ -433,7 +450,7 @@ Forbidden direct writes:
 - Do not directly write 03_outputs/lab-updates/
 ```
 
-- [ ] **Step 4: Add health question evidence section**
+- [x] **Step 4: Add health question evidence section**
 
 Include:
 
@@ -447,10 +464,11 @@ Include:
 - If evidence is weak, say `source insufficient`.
 - Only save qa-summaries when the user explicitly asks.
 - Separates facts, inferences, and verification items.
+- For high-risk or urgent symptoms, provide care-seeking guidance only; must not diagnose.
 - Review triggers: source conflict, member uncertainty, missing units or reference ranges, urgent symptoms, medication change request, diagnosis request.
 ```
 
-- [ ] **Step 5: Add per-workflow operational contract sections**
+- [x] **Step 5: Add per-workflow operational contract sections**
 
 Add a shared parent section plus independent workflow headings. Each marker must appear inside the section headed by that workflow name:
 
@@ -493,7 +511,7 @@ Add a shared parent section plus independent workflow headings. Each marker must
 - daily_tracking_update appends log.md after CSV write.
 ```
 
-- [ ] **Step 6: Preserve current low-level invocation details**
+- [x] **Step 6: Preserve current low-level invocation details**
 
 Keep existing command examples for:
 
@@ -503,7 +521,7 @@ python3 /absolute/path/to/AIHealth/scripts/family_doctor/run_skill.py --event /a
 
 Keep the note that `ingest`, `report`, and `reminder` require `--target`, while `query` does not.
 
-- [ ] **Step 7: Preserve non-goals**
+- [x] **Step 7: Preserve non-goals**
 
 Keep or add:
 
@@ -512,7 +530,7 @@ Keep or add:
 - no Phase 3 trends
 - no diagnosis, prescription, medication change advice
 
-- [ ] **Step 8: Run focused test and verify partial GREEN**
+- [x] **Step 8: Run focused test and verify partial GREEN**
 
 Run:
 
@@ -528,15 +546,15 @@ Expected: still FAIL because `.claude/skills/family-doctor.md` is not updated ye
 
 - Modify: `.claude/skills/family-doctor.md`
 
-- [ ] **Step 1: Mirror the workflow contract**
+- [x] **Step 1: Mirror the workflow contract**
 
 Add the same five workflow names and mappings as the Codex doc. The wording may be shorter, but the exact marker strings required by tests must appear.
 
-- [ ] **Step 2: Mirror direct write boundaries**
+- [x] **Step 2: Mirror direct write boundaries**
 
 Add the same allowed and forbidden direct-write markers.
 
-- [ ] **Step 3: Mirror health question evidence rules**
+- [x] **Step 3: Mirror health question evidence rules**
 
 Add the same evidence markers:
 
@@ -553,18 +571,21 @@ Add the same evidence markers:
 - `member uncertainty`
 - `missing units or reference ranges`
 - `urgent symptoms`
+- `high-risk`
+- `care-seeking guidance`
+- `must not diagnose`
 - `medication change request`
 - `diagnosis request`
 
-- [ ] **Step 4: Mirror per-workflow operational contracts**
+- [x] **Step 4: Mirror per-workflow operational contracts**
 
 Add the same independent Markdown headings and exact marker strings from Task 2 Step 5. The Claude-facing doc may be shorter around those sections, but each workflow's markers must remain inside that workflow's heading section.
 
-- [ ] **Step 5: Preserve existing invocation behavior**
+- [x] **Step 5: Preserve existing invocation behavior**
 
 Keep the current command syntax and current supported low-level event types.
 
-- [ ] **Step 6: Run focused test and verify GREEN**
+- [x] **Step 6: Run focused test and verify GREEN**
 
 Run:
 
@@ -574,7 +595,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_skill_workflow
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit skill docs**
+- [x] **Step 7: Commit skill docs**
 
 Run:
 
@@ -589,7 +610,7 @@ git commit -m "docs: add family doctor workflow skill contract"
 
 - Modify: `docs/superpowers/obsidian-first-llm-wiki/README.md`
 
-- [ ] **Step 1: Add Phase B implementation plan to the document index**
+- [x] **Step 1: Add Phase B implementation plan to the document index**
 
 Add to `## 当前文档`:
 
@@ -597,7 +618,7 @@ Add to `## 当前文档`:
 - [phase-b-workflow-contract-plan.md](./phase-b-workflow-contract-plan.md)：阶段 B 实施计划，聚焦 skill/prompt workflow contract 落地
 ```
 
-- [ ] **Step 2: Add Phase B implementation state**
+- [x] **Step 2: Add Phase B implementation state**
 
 Change the phase state section to include:
 
@@ -606,7 +627,7 @@ Change the phase state section to include:
 - Phase B: complete
 ```
 
-- [ ] **Step 3: Run full validation**
+- [x] **Step 3: Run full validation**
 
 Run:
 
@@ -626,7 +647,7 @@ Expected:
 - Full `tests/family_doctor` passes.
 - No `uv.lock` remains.
 
-- [ ] **Step 4: Review diff scope**
+- [x] **Step 4: Review diff scope**
 
 Run:
 
@@ -637,7 +658,7 @@ git diff -- .codex/skills/family-doctor/SKILL.md .claude/skills/family-doctor.md
 
 Expected: diff only touches Phase B skill contract docs, tests, and README state.
 
-- [ ] **Step 5: Commit final docs**
+- [x] **Step 5: Commit final docs**
 
 Run:
 

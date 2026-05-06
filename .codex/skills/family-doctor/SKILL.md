@@ -48,6 +48,7 @@ Forbidden direct writes:
 - If evidence is weak, say `source insufficient`.
 - Only save qa-summaries when the user explicitly asks.
 - Separates facts, inferences, and verification items.
+- For high-risk or urgent symptoms, provide care-seeking guidance only; must not diagnose.
 - Review triggers: source conflict, member uncertainty, missing units or reference ranges, urgent symptoms, medication change request, diagnosis request.
 
 ## Workflow operational contracts

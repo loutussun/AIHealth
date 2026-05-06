@@ -102,10 +102,11 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q
 - `validate_phase0` 通过
 - `115 passed`
 
-## 本轮 skill 包装验证
+## 当前 Obsidian-first 分支验证
 
-当前隔离 worktree 的 skill 包装实现已验证：
+当前隔离 worktree 的 Obsidian-first Phase A/B 实现已验证：
 
 - `python3 scripts/family_doctor/validate_phase0.py --target ./family-health` 通过
-- `PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q` 结果 `133 passed`
+- bootstrap 到 `/tmp/family-health-phase-b-skill-contract` 后再次 `validate_phase0` 通过
+- `PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q` 结果 `169 passed`
 - 从非 repo cwd 使用绝对路径调用 `run_skill.py` 的 `query` / `ingest` 已实测可用
