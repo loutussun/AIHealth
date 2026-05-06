@@ -24,6 +24,7 @@ Do not broaden scope beyond that design.
   - Locks the Phase B workflow contract in both skill docs.
   - Prevents future docs from claiming unsupported CLI routes.
   - Checks evidence and write-boundary rules for `health_question` and direct LLM writes.
+  - Requires each workflow to have an independent Markdown heading so per-workflow rules stay locally scoped.
 - Modify: `.codex/skills/family-doctor/SKILL.md`
   - Primary Codex skill instructions.
   - Should lead with Obsidian-first workflow selection.
@@ -87,6 +88,14 @@ Required per-workflow markers:
 - `health_question separates facts, inferences, and verification items`
 - `health_question review triggers: source conflict, member uncertainty, missing units or reference ranges, urgent symptoms, medication change request, diagnosis request`
 
+Each workflow must also appear in its own Markdown heading in both skill docs:
+
+- `### ingest_report`
+- `### medical_visit_prep`
+- `### family_message`
+- `### daily_tracking_update`
+- `## health_question evidence rules` or another heading containing `health_question`
+
 Direct host-LLM writes are allowed only when the user explicitly requests an artifact or tracking update, and only to:
 
 - `03_outputs/visit-briefs/`
@@ -107,6 +116,7 @@ Use exact paths:
 
 ```python
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -118,6 +128,19 @@ SKILL_DOCS = [
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def _workflow_section(text: str, workflow: str) -> str:
+    heading_pattern = re.compile(rf"(?m)^#+\s+.*{re.escape(workflow)}.*$")
+    heading_match = heading_pattern.search(text)
+    assert heading_match is not None, f"missing workflow heading: {workflow}"
+
+    start = heading_match.start()
+    heading_level = len(heading_match.group(0)) - len(heading_match.group(0).lstrip("#"))
+    next_heading_pattern = re.compile(rf"(?m)^#{{1,{heading_level}}}\s+")
+    next_heading_match = next_heading_pattern.search(text, heading_match.end())
+    end = next_heading_match.start() if next_heading_match else len(text)
+    return text[start:end]
 ```
 
 - [ ] **Step 2: Add test for required workflows**
@@ -216,8 +239,9 @@ def test_skill_docs_lock_health_question_evidence_rules():
 
     for doc in SKILL_DOCS:
         content = _read(doc)
+        section = _workflow_section(content, "health_question")
         for marker in required:
-            assert marker in content, f"{doc}: {marker}"
+            assert marker in section, f"{doc}: {marker}"
 ```
 
 - [ ] **Step 6: Add test that Phase B docs do not claim unsupported routes**
@@ -251,36 +275,61 @@ Add:
 
 ```python
 def test_skill_docs_lock_per_workflow_operational_contracts():
-    required = [
-        "ingest_report writes via existing ingest pipeline",
-        "ingest_report tracking direct write only when explicitly requested and must include source_ref",
-        "ingest_report tracking direct write must preserve CSV headers",
-        "ingest_report appends log.md after direct tracking write",
-        "ingest_report review triggers: member uncertainty, abnormal values, medication dose, diagnosis, missing source",
-        "medical_visit_prep reads 02_wiki/members/, 02_wiki/sources/, 02_wiki/plans/, 04_tracking/",
-        "medical_visit_prep writes 03_outputs/visit-briefs/ only when explicitly requested",
-        "medical_visit_prep uses visit-brief-template.md",
-        "medical_visit_prep must not diagnose or replace clinician judgment",
-        "medical_visit_prep key claims need source or verification marker",
-        "medical_visit_prep appends log.md after artifact write",
-        "family_message writes 03_outputs/family-messages/ only when explicitly requested",
-        "family_message uses family-message-template.md",
-        "family_message must not add new medical claims",
-        "family_message must not soften urgent risk",
-        "family_message writes uncertainty to 不确定项",
-        "family_message appends log.md after artifact write",
-        "daily_tracking_update preserves CSV headers",
-        "daily_tracking_update requires member_id, date, source_ref",
-        "daily_tracking_update must not silently overwrite existing rows",
-        "daily_tracking_update corrections require traceable explanation in notes",
-        "daily_tracking_update writes ambiguous values to notes or review",
-        "daily_tracking_update appends log.md after CSV write",
-    ]
+    workflow_markers = {
+        "ingest_report": [
+            "existing ingest pipeline",
+            "explicitly requested",
+            "source_ref",
+            "preserve CSV headers",
+            "log.md",
+            "member uncertainty",
+            "abnormal values",
+            "medication dose",
+            "diagnosis",
+            "missing source",
+        ],
+        "medical_visit_prep": [
+            "02_wiki/members/",
+            "02_wiki/sources/",
+            "02_wiki/plans/",
+            "04_tracking/",
+            "03_outputs/visit-briefs/",
+            "explicitly requested",
+            "visit-brief-template.md",
+            "must not diagnose",
+            "clinician judgment",
+            "source",
+            "verification marker",
+            "log.md",
+        ],
+        "family_message": [
+            "03_outputs/family-messages/",
+            "explicitly requested",
+            "family-message-template.md",
+            "must not add new medical claims",
+            "must not soften urgent risk",
+            "不确定项",
+            "log.md",
+        ],
+        "daily_tracking_update": [
+            "preserve CSV headers",
+            "member_id",
+            "date",
+            "source_ref",
+            "must not silently overwrite",
+            "traceable explanation",
+            "notes",
+            "review",
+            "log.md",
+        ],
+    }
 
     for doc in SKILL_DOCS:
         content = _read(doc)
-        for marker in required:
-            assert marker in content, f"{doc}: {marker}"
+        for workflow, markers in workflow_markers.items():
+            section = _workflow_section(content, workflow)
+            for marker in markers:
+                assert marker in section, f"{doc}: {workflow}: {marker}"
 ```
 
 - [ ] **Step 8: Add test that docs do not contain contradictory route claims**
@@ -341,7 +390,7 @@ Use `family-doctor` as an Obsidian-first family health wiki maintainer. The vaul
 
 - [ ] **Step 2: Add `Obsidian-first workflows` section**
 
-Include all five workflows:
+Include all five workflows in a summary table:
 
 ```markdown
 ## Obsidian-first workflows
@@ -356,6 +405,8 @@ Choose the user-intent workflow first, then map it to the current low-level core
 | `daily_tracking_update` | User wants to update medication, diet, exercise, sleep, or checkup CSVs | No dedicated route; host LLM may update `04_tracking/*.csv` under the direct-write rules |
 | `health_question` | User asks a question about the vault | `event_type: query`; default read-only |
 ```
+
+The summary table is not enough for Task 1 tests. The doc must also contain independent Markdown headings for each workflow so tests can scope operational markers to the right workflow section. Do not add empty placeholder workflow headings here; Step 5 provides the real `### ingest_report`, `### medical_visit_prep`, `### family_message`, and `### daily_tracking_update` sections with their markers inside.
 
 - [ ] **Step 3: Add write-boundary section**
 
@@ -399,30 +450,41 @@ Include:
 - Review triggers: source conflict, member uncertainty, missing units or reference ranges, urgent symptoms, medication change request, diagnosis request.
 ```
 
-- [ ] **Step 5: Add per-workflow operational contract section**
+- [ ] **Step 5: Add per-workflow operational contract sections**
 
-Include exact marker strings:
+Add a shared parent section plus independent workflow headings. Each marker must appear inside the section headed by that workflow name:
 
 ```markdown
 ## Workflow operational contracts
+
+### ingest_report
 
 - ingest_report writes via existing ingest pipeline.
 - ingest_report tracking direct write only when explicitly requested and must include source_ref.
 - ingest_report tracking direct write must preserve CSV headers.
 - ingest_report appends log.md after direct tracking write.
 - ingest_report review triggers: member uncertainty, abnormal values, medication dose, diagnosis, missing source.
+
+### medical_visit_prep
+
 - medical_visit_prep reads 02_wiki/members/, 02_wiki/sources/, 02_wiki/plans/, 04_tracking/.
 - medical_visit_prep writes 03_outputs/visit-briefs/ only when explicitly requested.
 - medical_visit_prep uses visit-brief-template.md.
 - medical_visit_prep must not diagnose or replace clinician judgment.
 - medical_visit_prep key claims need source or verification marker.
 - medical_visit_prep appends log.md after artifact write.
+
+### family_message
+
 - family_message writes 03_outputs/family-messages/ only when explicitly requested.
 - family_message uses family-message-template.md.
 - family_message must not add new medical claims.
 - family_message must not soften urgent risk.
 - family_message writes uncertainty to 不确定项.
 - family_message appends log.md after artifact write.
+
+### daily_tracking_update
+
 - daily_tracking_update preserves CSV headers.
 - daily_tracking_update requires member_id, date, source_ref.
 - daily_tracking_update must not silently overwrite existing rows.
@@ -496,7 +558,7 @@ Add the same evidence markers:
 
 - [ ] **Step 4: Mirror per-workflow operational contracts**
 
-Add the same exact marker strings from Task 2 Step 5.
+Add the same independent Markdown headings and exact marker strings from Task 2 Step 5. The Claude-facing doc may be shorter around those sections, but each workflow's markers must remain inside that workflow's heading section.
 
 - [ ] **Step 5: Preserve existing invocation behavior**
 
