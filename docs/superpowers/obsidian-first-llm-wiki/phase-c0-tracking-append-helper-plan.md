@@ -124,7 +124,7 @@ REQUIRED_NON_EMPTY_FIELDS = ("member_id", "date", "source_ref")
 
 - Create: `tests/family_doctor/test_tracking_append.py`
 
-- [ ] **Step 1: Write table registry test**
+- [x] **Step 1: Write table registry test**
 
 Create `tests/family_doctor/test_tracking_append.py` with imports that currently fail:
 
@@ -162,7 +162,7 @@ def test_tracking_table_registry_matches_vault_contract():
         assert ",".join(definition.header) == header
 ```
 
-- [ ] **Step 2: Add test helpers**
+- [x] **Step 2: Add test helpers**
 
 Add helpers:
 
@@ -184,7 +184,7 @@ def _base_row(table: str) -> dict[str, str]:
     }
 ```
 
-- [ ] **Step 3: Add append success tests**
+- [x] **Step 3: Add append success tests**
 
 Add:
 
@@ -214,7 +214,7 @@ def test_append_tracking_row_appends_one_row_and_preserves_header(run_bootstrap,
     assert rows[0]["notes"] == "contains comma, and newline\nsecond line"
 ```
 
-- [ ] **Step 4: Add failure tests**
+- [x] **Step 4: Add failure tests**
 
 Add:
 
@@ -285,7 +285,7 @@ def test_append_tracking_row_rejects_header_drift_before_writing(run_bootstrap, 
     assert path.read_text(encoding="utf-8") == "member_id,date\n"
 ```
 
-- [ ] **Step 5: Run module tests and verify RED**
+- [x] **Step 5: Run module tests and verify RED**
 
 Run:
 
@@ -295,7 +295,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_tracking_appen
 
 Expected: FAIL because `family_doctor.tracking_append` does not exist.
 
-- [ ] **Step 6: Commit red module tests**
+- [x] **Step 6: Commit red module tests**
 
 Run:
 
@@ -310,7 +310,7 @@ git commit -m "test: define tracking append helper contract"
 
 - Create: `family_doctor/tracking_append.py`
 
-- [ ] **Step 1: Add module skeleton**
+- [x] **Step 1: Add module skeleton**
 
 Create:
 
@@ -342,11 +342,11 @@ class TrackingAppendError(Exception):
         return {"status": "error", "error": {"code": self.code, "message": self.message}}
 ```
 
-- [ ] **Step 2: Add table registry**
+- [x] **Step 2: Add table registry**
 
 Add `TRACKING_TABLES` using the exact registry from the top of this plan, converting each header list to a tuple and each path to `Path`.
 
-- [ ] **Step 3: Add validation helpers**
+- [x] **Step 3: Add validation helpers**
 
 Implement:
 
@@ -376,7 +376,7 @@ Implement `_validate_header(csv_path: Path, table: TrackingTable) -> None` using
 - raise `missing_tracking_csv` if the file does not exist
 - raise `tracking_header_drift` if the first row is not exactly `list(table.header)`
 
-- [ ] **Step 4: Add append function**
+- [x] **Step 4: Add append function**
 
 Implement:
 
@@ -407,7 +407,7 @@ def append_tracking_row(target: Path, table: str, row: Mapping[str, object]) -> 
     }
 ```
 
-- [ ] **Step 5: Run module tests and verify GREEN**
+- [x] **Step 5: Run module tests and verify GREEN**
 
 Run:
 
@@ -417,7 +417,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_tracking_appen
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit module implementation**
+- [x] **Step 6: Commit module implementation**
 
 Run:
 
@@ -432,7 +432,7 @@ git commit -m "feat: add tracking append helper"
 
 - Create: `tests/family_doctor/test_append_tracking_row_cli.py`
 
-- [ ] **Step 1: Write CLI tests**
+- [x] **Step 1: Write CLI tests**
 
 Create:
 
@@ -468,7 +468,7 @@ def _medication_row() -> dict[str, str]:
     }
 ```
 
-- [ ] **Step 2: Add CLI success test**
+- [x] **Step 2: Add CLI success test**
 
 Add:
 
@@ -507,7 +507,7 @@ def test_append_tracking_row_cli_appends_and_prints_success_json(run_bootstrap, 
     assert rows == [_medication_row()]
 ```
 
-- [ ] **Step 3: Add CLI error tests**
+- [x] **Step 3: Add CLI error tests**
 
 Add:
 
@@ -599,7 +599,7 @@ Final implementation also locks two CLI quality paths:
 - missing required CLI arguments return stdout JSON with `error.code == "invalid_arguments"` and empty stderr
 - unexpected internal exceptions return stdout JSON with `error.code == "internal_error"` and empty stderr
 
-- [ ] **Step 4: Run CLI tests and verify RED**
+- [x] **Step 4: Run CLI tests and verify RED**
 
 Run:
 
@@ -609,7 +609,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_append_trackin
 
 Expected: FAIL because `scripts/family_doctor/append_tracking_row.py` does not exist.
 
-- [ ] **Step 5: Commit red CLI tests**
+- [x] **Step 5: Commit red CLI tests**
 
 Run:
 
@@ -624,7 +624,7 @@ git commit -m "test: define tracking append cli contract"
 
 - Create: `scripts/family_doctor/append_tracking_row.py`
 
-- [ ] **Step 1: Add CLI script**
+- [x] **Step 1: Add CLI script**
 
 Create:
 
@@ -703,7 +703,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: Run CLI tests and verify GREEN**
+- [x] **Step 2: Run CLI tests and verify GREEN**
 
 Run:
 
@@ -713,7 +713,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_append_trackin
 
 Expected: PASS.
 
-- [ ] **Step 3: Run module and CLI tests together**
+- [x] **Step 3: Run module and CLI tests together**
 
 Run:
 
@@ -723,7 +723,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_tracking_appen
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit CLI implementation**
+- [x] **Step 4: Commit CLI implementation**
 
 Run:
 
@@ -740,7 +740,7 @@ git commit -m "feat: add tracking append cli"
 - Modify: `.claude/skills/family-doctor.md`
 - Modify: `tests/family_doctor/test_skill_workflow_contract_docs.py`
 
-- [ ] **Step 1: Add failing skill-doc test markers**
+- [x] **Step 1: Add failing skill-doc test markers**
 
 In `tests/family_doctor/test_skill_workflow_contract_docs.py`, update the `daily_tracking_update` workflow markers to include:
 
@@ -758,7 +758,7 @@ Keep forbidden markers that prevent:
 - `new CLI route`
 - `new Python pipeline`
 
-- [ ] **Step 2: Run focused skill-doc test and verify RED**
+- [x] **Step 2: Run focused skill-doc test and verify RED**
 
 Run:
 
@@ -768,7 +768,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_skill_workflow
 
 Expected: FAIL because skill docs do not mention the Phase C.0 helper yet.
 
-- [ ] **Step 3: Update Codex skill doc**
+- [x] **Step 3: Update Codex skill doc**
 
 In `.codex/skills/family-doctor/SKILL.md`, under `### daily_tracking_update`, add concise rules:
 
@@ -780,11 +780,11 @@ In `.codex/skills/family-doctor/SKILL.md`, under `### daily_tracking_update`, ad
 
 Preserve existing markers and forbidden route boundaries.
 
-- [ ] **Step 4: Update Claude skill doc**
+- [x] **Step 4: Update Claude skill doc**
 
 Mirror the same three rules in `.claude/skills/family-doctor.md`.
 
-- [ ] **Step 5: Run focused skill-doc test and verify GREEN**
+- [x] **Step 5: Run focused skill-doc test and verify GREEN**
 
 Run:
 
@@ -794,7 +794,7 @@ PYTHONPATH=. uv run --with pytest pytest tests/family_doctor/test_skill_workflow
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit skill docs**
+- [x] **Step 6: Commit skill docs**
 
 Run:
 
@@ -809,7 +809,7 @@ git commit -m "docs: route tracking appends through helper"
 
 - Modify: `docs/superpowers/obsidian-first-llm-wiki/README.md`
 
-- [ ] **Step 1: Add this plan to the document index**
+- [x] **Step 1: Add this plan to the document index**
 
 Add:
 
@@ -817,7 +817,7 @@ Add:
 - [phase-c0-tracking-append-helper-plan.md](./phase-c0-tracking-append-helper-plan.md)：阶段 C.0 实施计划，聚焦只追加 tracking CSV helper
 ```
 
-- [ ] **Step 2: Update Phase C.0 state**
+- [x] **Step 2: Update Phase C.0 state**
 
 Change:
 
@@ -831,7 +831,7 @@ to:
 - Phase C.0: complete
 ```
 
-- [ ] **Step 3: Run full validation**
+- [x] **Step 3: Run full validation**
 
 Run:
 
@@ -851,7 +851,7 @@ Expected:
 - Full `tests/family_doctor` passes.
 - No `uv.lock` remains.
 
-- [ ] **Step 4: Review diff scope**
+- [x] **Step 4: Review diff scope**
 
 Run:
 
@@ -862,7 +862,7 @@ git diff -- family_doctor/tracking_append.py scripts/family_doctor/append_tracki
 
 Expected: diff only touches the Phase C.0 helper, its tests, skill docs, and Phase C.0 docs.
 
-- [ ] **Step 5: Commit final docs**
+- [x] **Step 5: Commit final docs**
 
 Run:
 
@@ -882,6 +882,8 @@ python3 scripts/family_doctor/bootstrap_vault.py --target /tmp/family-health-pha
 python3 scripts/family_doctor/validate_phase0.py --target /tmp/family-health-phase-c0-tracking-append
 PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q
 ```
+
+Implementation note: Task 6 verification completed with both Phase 0 validators passing, the full `tests/family_doctor` suite passing, and no `uv.lock` left behind.
 
 ## Residual Risks After Phase C.0
 

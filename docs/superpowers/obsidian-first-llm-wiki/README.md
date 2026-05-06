@@ -19,7 +19,7 @@
 
 - Phase A: complete
 - Phase B: complete
-- Phase C.0: implementation plan ready
+- Phase C.0: complete
 
 ## 分支与目录约定
 
