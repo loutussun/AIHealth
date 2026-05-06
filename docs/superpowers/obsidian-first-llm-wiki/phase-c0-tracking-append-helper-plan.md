@@ -822,7 +822,7 @@ Add:
 Change:
 
 ```markdown
-- Phase C.0: design approved; implementation plan pending
+- Phase C.0: implementation plan ready
 ```
 
 to:
@@ -857,7 +857,7 @@ Run:
 
 ```bash
 git diff --stat
-git diff -- family_doctor/tracking_append.py scripts/family_doctor/append_tracking_row.py tests/family_doctor/test_tracking_append.py tests/family_doctor/test_append_tracking_row_cli.py tests/family_doctor/test_skill_workflow_contract_docs.py .codex/skills/family-doctor/SKILL.md .claude/skills/family-doctor.md docs/superpowers/obsidian-first-llm-wiki/README.md
+git diff -- family_doctor/tracking_append.py scripts/family_doctor/append_tracking_row.py tests/family_doctor/test_tracking_append.py tests/family_doctor/test_append_tracking_row_cli.py tests/family_doctor/test_skill_workflow_contract_docs.py .codex/skills/family-doctor/SKILL.md .claude/skills/family-doctor.md docs/superpowers/obsidian-first-llm-wiki/README.md docs/superpowers/obsidian-first-llm-wiki/phase-c0-tracking-append-helper-plan.md
 ```
 
 Expected: diff only touches the Phase C.0 helper, its tests, skill docs, and Phase C.0 docs.
