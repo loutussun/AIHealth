@@ -108,7 +108,8 @@ def _validate_row_fields(table: TrackingTable, row: Mapping[str, object]) -> dic
     if unknown:
         raise TrackingAppendError("unknown_field", f"unknown fields: {', '.join(unknown)}")
     for field in REQUIRED_NON_EMPTY_FIELDS:
-        if not coerced[field].strip():
+        raw_value = row[field]
+        if not isinstance(raw_value, str) or not raw_value.strip():
             raise TrackingAppendError("missing_required_field", f"{field} is required")
     return coerced
 
@@ -116,10 +117,15 @@ def _validate_row_fields(table: TrackingTable, row: Mapping[str, object]) -> dic
 def _validate_header(csv_path: Path, table: TrackingTable) -> None:
     if not csv_path.exists():
         raise TrackingAppendError("missing_tracking_csv", f"tracking CSV does not exist: {csv_path}")
+    if not csv_path.is_file():
+        raise TrackingAppendError("missing_tracking_csv", f"tracking CSV is not a file: {csv_path}")
 
-    with csv_path.open(newline="", encoding="utf-8") as handle:
-        reader = csv.reader(handle)
-        header = next(reader, None)
+    try:
+        with csv_path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.reader(handle)
+            header = next(reader, None)
+    except OSError as exc:
+        raise TrackingAppendError("missing_tracking_csv", str(exc)) from exc
 
     if header != list(table.header):
         raise TrackingAppendError(
@@ -128,9 +134,23 @@ def _validate_header(csv_path: Path, table: TrackingTable) -> None:
         )
 
 
+def _ensure_final_newline(csv_path: Path) -> None:
+    try:
+        if csv_path.stat().st_size == 0:
+            return
+        with csv_path.open("rb+") as handle:
+            handle.seek(-1, 2)
+            if handle.read(1) != b"\n":
+                handle.write(b"\n")
+    except OSError as exc:
+        raise TrackingAppendError("write_failed", str(exc)) from exc
+
+
 def append_tracking_row(target: Path, table: str, row: Mapping[str, object]) -> dict[str, object]:
-    if not target.exists() or not target.is_dir():
+    if not target.exists():
         raise TrackingAppendError("invalid_target", f"target does not exist: {target}")
+    if not target.is_dir():
+        raise TrackingAppendError("invalid_target", f"target is not a directory: {target}")
     if table not in TRACKING_TABLES:
         raise TrackingAppendError("invalid_table", f"unsupported tracking table: {table}")
 
@@ -138,6 +158,7 @@ def append_tracking_row(target: Path, table: str, row: Mapping[str, object]) -> 
     csv_path = target / definition.relative_path
     validated_row = _validate_row_fields(definition, row)
     _validate_header(csv_path, definition)
+    _ensure_final_newline(csv_path)
 
     try:
         with csv_path.open("a", newline="", encoding="utf-8") as handle:

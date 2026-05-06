@@ -145,6 +145,30 @@ def test_append_tracking_row_rejects_empty_required_fields(
     assert _read_rows(_tracking_path(target, "medication")) == []
 
 
+@pytest.mark.parametrize(
+    ("required_field", "value"),
+    [
+        ("member_id", 0),
+        ("date", False),
+        ("source_ref", []),
+    ],
+)
+def test_append_tracking_row_rejects_non_string_required_fields(
+    run_bootstrap, tmp_path, required_field, value
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    row = _base_row("medication")
+    row[required_field] = value
+
+    with pytest.raises(TrackingAppendError) as exc_info:
+        append_tracking_row(target, "medication", row)
+
+    assert exc_info.value.code == "missing_required_field"
+    assert required_field in exc_info.value.message
+    assert _read_rows(_tracking_path(target, "medication")) == []
+
+
 def test_append_tracking_row_rejects_header_drift_before_writing(
     run_bootstrap, tmp_path
 ):
@@ -158,3 +182,34 @@ def test_append_tracking_row_rejects_header_drift_before_writing(
 
     assert exc_info.value.code == "tracking_header_drift"
     assert path.read_text(encoding="utf-8") == "member_id,date\n"
+
+
+def test_append_tracking_row_does_not_corrupt_header_without_final_newline(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    path = _tracking_path(target, "medication")
+    header = ",".join(TRACKING_TABLES["medication"].header)
+    path.write_text(header, encoding="utf-8")
+
+    append_tracking_row(target, "medication", _base_row("medication"))
+
+    assert path.read_text(encoding="utf-8").splitlines()[0] == header
+    assert _read_rows(path) == [_base_row("medication")]
+
+
+def test_append_tracking_row_rejects_tracking_csv_path_that_is_not_a_file(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    path = _tracking_path(target, "medication")
+    path.unlink()
+    path.mkdir()
+
+    with pytest.raises(TrackingAppendError) as exc_info:
+        append_tracking_row(target, "medication", _base_row("medication"))
+
+    assert exc_info.value.code == "missing_tracking_csv"
+    assert "not a file" in exc_info.value.message
