@@ -270,3 +270,24 @@ def test_append_tracking_row_rejects_non_canonical_vault_target(tmp_path):
 
     assert exc_info.value.code == "invalid_target"
     assert "canonical family-health vault" in exc_info.value.message
+
+
+def test_append_tracking_row_rejects_spoofed_vault_markers(tmp_path):
+    target = tmp_path / "spoofed-family-health-vault"
+    target.joinpath("00_schema").mkdir(parents=True)
+    target.joinpath("AGENTS.md").write_text("fake", encoding="utf-8")
+    target.joinpath("index.md").write_text("fake", encoding="utf-8")
+    target.joinpath("00_schema/event-schema.json").write_text("{}", encoding="utf-8")
+    target.joinpath("00_schema/members.md").write_text("fake", encoding="utf-8")
+    tracking_dir = target / "04_tracking"
+    tracking_dir.mkdir()
+    tracking_dir.joinpath("用药打卡.csv").write_text(
+        ",".join(TRACKING_TABLES["medication"].header) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TrackingAppendError) as exc_info:
+        append_tracking_row(target, "medication", _base_row("medication"))
+
+    assert exc_info.value.code == "invalid_target"
+    assert "canonical family-health vault" in exc_info.value.message

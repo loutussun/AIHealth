@@ -8,11 +8,10 @@ from typing import Mapping
 
 REQUIRED_NON_EMPTY_FIELDS = ("member_id", "date", "source_ref")
 REQUIRED_VAULT_MARKERS = (
-    Path("AGENTS.md"),
-    Path("index.md"),
-    Path("00_schema/event-schema.json"),
-    Path("00_schema/members.md"),
-    Path("04_tracking"),
+    (Path("AGENTS.md"), ("# family-health Canonical Vault", "policy: vault-product-surface")),
+    (Path("index.md"), ("type: index", "[[家庭健康管理中心]]", "## Tracking CSV")),
+    (Path("00_schema/event-schema.json"), ('"event_type"', '"payload"')),
+    (Path("00_schema/members.md"), ("# 成员注册规则", "## 成员识别护栏")),
 )
 
 
@@ -142,12 +141,30 @@ def _validate_header(csv_path: Path, table: TrackingTable) -> None:
 
 
 def _validate_canonical_vault_target(target: Path) -> None:
-    missing = [str(marker) for marker in REQUIRED_VAULT_MARKERS if not (target / marker).exists()]
-    if missing:
+    problems = []
+    for marker, required_text in REQUIRED_VAULT_MARKERS:
+        marker_path = target / marker
+        if not marker_path.is_file():
+            problems.append(str(marker))
+            continue
+        try:
+            marker_content = marker_path.read_text(encoding="utf-8")
+        except OSError:
+            problems.append(str(marker))
+            continue
+        missing_text = [text for text in required_text if text not in marker_content]
+        if missing_text:
+            problems.append(str(marker))
+
+    tracking_dir = target / "04_tracking"
+    if not tracking_dir.is_dir():
+        problems.append("04_tracking")
+
+    if problems:
         raise TrackingAppendError(
             "invalid_target",
             "target is not a canonical family-health vault; "
-            f"missing markers: {', '.join(missing)}",
+            f"invalid markers: {', '.join(problems)}",
         )
 
 
