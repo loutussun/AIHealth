@@ -9,6 +9,7 @@
 - [phase-b-workflow-contract-design.md](./phase-b-workflow-contract-design.md)：阶段 B 设计，聚焦 skill/prompt workflow contract
 - [phase-b-workflow-contract-plan.md](./phase-b-workflow-contract-plan.md)：阶段 B 实施计划，聚焦 skill/prompt workflow contract 落地
 - [phase-c0-tracking-append-helper-design.md](./phase-c0-tracking-append-helper-design.md)：阶段 C.0 设计，聚焦 `04_tracking/*.csv` 只追加 helper
+- [phase-c0-tracking-append-helper-plan.md](./phase-c0-tracking-append-helper-plan.md)：阶段 C.0 实施计划，聚焦只追加 tracking CSV helper
 
 ## 当前主线
 
@@ -18,7 +19,7 @@
 
 - Phase A: complete
 - Phase B: complete
-- Phase C.0: design approved; implementation plan pending
+- Phase C.0: implementation plan ready
 
 ## 分支与目录约定
 
