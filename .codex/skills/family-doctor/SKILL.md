@@ -83,6 +83,9 @@ Forbidden direct writes:
 
 ### daily_tracking_update
 
+- daily_tracking_update should use standalone CLI helper `scripts/family_doctor/append_tracking_row.py` for append-only tracking rows.
+- daily_tracking_update helper is append-only and must not use helper for corrections.
+- daily_tracking_update helper is not a new route or event_type.
 - daily_tracking_update must preserve CSV headers exactly.
 - daily_tracking_update requires member_id, date, source_ref.
 - daily_tracking_update must not silently overwrite existing rows.

@@ -203,6 +203,10 @@ def test_skill_docs_lock_per_workflow_operational_contracts() -> None:
             "log.md",
         ],
         "daily_tracking_update": [
+            "scripts/family_doctor/append_tracking_row.py",
+            "append-only",
+            "standalone CLI helper",
+            "must not use helper for corrections",
             "preserve CSV headers",
             "member_id",
             "date",
