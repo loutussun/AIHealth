@@ -7,6 +7,7 @@
 - [design.md](./design.md)：回正后的产品与架构设计
 - [phase-a-vault-contract-plan.md](./phase-a-vault-contract-plan.md)：阶段 A 实施计划，聚焦 Obsidian-first vault contract
 - [phase-b-workflow-contract-design.md](./phase-b-workflow-contract-design.md)：阶段 B 设计，聚焦 skill/prompt workflow contract
+- [phase-b-workflow-contract-plan.md](./phase-b-workflow-contract-plan.md)：阶段 B 实施计划，聚焦 skill/prompt workflow contract 落地
 
 ## 当前主线
 
@@ -15,6 +16,7 @@
 ## 阶段状态
 
 - Phase A: complete
+- Phase B: complete
 
 ## 分支与目录约定
 
