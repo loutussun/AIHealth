@@ -12,7 +12,7 @@ Choose the user-intent workflow first, then map it to the current low-level core
 | `ingest_report` | New reports, labs, visit records, doctor notes | `event_type: ingest`; optional `event_type: report` with `payload.report_kind: checkup_update` or `payload.report_kind: lab_update` |
 | `medical_visit_prep` | User wants a doctor-visit one-pager | `event_type: query`; if user explicitly asks for an artifact, host LLM may write `03_outputs/visit-briefs/` |
 | `family_message` | User wants family-friendly wording | `event_type: query`; if user explicitly asks for an artifact, host LLM may write `03_outputs/family-messages/` |
-| `daily_tracking_update` | User wants to update medication, diet, exercise, sleep, or checkup CSVs | No dedicated route; host LLM may update `04_tracking/*.csv` under the direct-write rules |
+| `daily_tracking_update` | User wants to update medication, diet, exercise, sleep, or checkup CSVs | No dedicated route; append-only rows should use `scripts/family_doctor/append_tracking_row.py`; corrections must not use the helper |
 | `health_question` | User asks a question about the vault | `event_type: query`; default read-only |
 
 ## Direct write boundaries

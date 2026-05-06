@@ -231,6 +231,7 @@ def test_skill_docs_do_not_contradict_route_boundaries() -> None:
         "medical_visit_prep route",
         "family_message route",
         "daily_tracking_update route",
+        "host LLM may update `04_tracking/*.csv`",
         "health_question writes by default",
         "03_outputs/* can be used as evidence",
         "03_outputs/* may be standalone evidence",
