@@ -7,6 +7,13 @@ from typing import Mapping
 
 
 REQUIRED_NON_EMPTY_FIELDS = ("member_id", "date", "source_ref")
+REQUIRED_VAULT_MARKERS = (
+    Path("AGENTS.md"),
+    Path("index.md"),
+    Path("00_schema/event-schema.json"),
+    Path("00_schema/members.md"),
+    Path("04_tracking"),
+)
 
 
 @dataclass(frozen=True)
@@ -134,6 +141,43 @@ def _validate_header(csv_path: Path, table: TrackingTable) -> None:
         )
 
 
+def _validate_canonical_vault_target(target: Path) -> None:
+    missing = [str(marker) for marker in REQUIRED_VAULT_MARKERS if not (target / marker).exists()]
+    if missing:
+        raise TrackingAppendError(
+            "invalid_target",
+            "target is not a canonical family-health vault; "
+            f"missing markers: {', '.join(missing)}",
+        )
+
+
+def _validate_tracking_path(target: Path, csv_path: Path) -> None:
+    path_to_check = csv_path
+    while path_to_check != target:
+        if path_to_check.is_symlink():
+            raise TrackingAppendError(
+                "invalid_tracking_path",
+                f"tracking CSV path must not contain symlinks: {csv_path}",
+            )
+        if path_to_check.parent == path_to_check:
+            raise TrackingAppendError(
+                "invalid_tracking_path",
+                f"tracking CSV path is not under target vault: {csv_path}",
+            )
+        path_to_check = path_to_check.parent
+
+    try:
+        csv_real = csv_path.resolve(strict=True)
+    except OSError as exc:
+        raise TrackingAppendError("missing_tracking_csv", str(exc)) from exc
+
+    if not csv_real.is_relative_to(target):
+        raise TrackingAppendError(
+            "invalid_tracking_path",
+            f"tracking CSV resolves outside target vault: {csv_path}",
+        )
+
+
 def _ensure_final_newline(csv_path: Path) -> None:
     try:
         if csv_path.stat().st_size == 0:
@@ -151,12 +195,18 @@ def append_tracking_row(target: Path, table: str, row: Mapping[str, object]) -> 
         raise TrackingAppendError("invalid_target", f"target does not exist: {target}")
     if not target.is_dir():
         raise TrackingAppendError("invalid_target", f"target is not a directory: {target}")
+    try:
+        target = target.resolve(strict=True)
+    except OSError as exc:
+        raise TrackingAppendError("invalid_target", str(exc)) from exc
     if table not in TRACKING_TABLES:
         raise TrackingAppendError("invalid_table", f"unsupported tracking table: {table}")
 
+    _validate_canonical_vault_target(target)
     definition = TRACKING_TABLES[table]
     csv_path = target / definition.relative_path
     validated_row = _validate_row_fields(definition, row)
+    _validate_tracking_path(target, csv_path)
     _validate_header(csv_path, definition)
     _ensure_final_newline(csv_path)
 

@@ -213,3 +213,60 @@ def test_append_tracking_row_rejects_tracking_csv_path_that_is_not_a_file(
 
     assert exc_info.value.code == "missing_tracking_csv"
     assert "not a file" in exc_info.value.message
+
+
+def test_append_tracking_row_rejects_tracking_csv_symlink_escape(run_bootstrap, tmp_path):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    path = _tracking_path(target, "medication")
+    outside = tmp_path / "outside.csv"
+    outside.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    path.unlink()
+    path.symlink_to(outside)
+
+    with pytest.raises(TrackingAppendError) as exc_info:
+        append_tracking_row(target, "medication", _base_row("medication"))
+
+    assert exc_info.value.code == "invalid_tracking_path"
+    assert _read_rows(outside) == []
+
+
+def test_append_tracking_row_rejects_tracking_directory_symlink_escape(
+    run_bootstrap, tmp_path
+):
+    target = tmp_path / "family-health"
+    assert run_bootstrap(target).returncode == 0
+    tracking_dir = target / "04_tracking"
+    outside_dir = tmp_path / "outside-tracking"
+    outside_dir.mkdir()
+    outside_csv = outside_dir / "用药打卡.csv"
+    outside_csv.write_text(
+        _tracking_path(target, "medication").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    for child in tracking_dir.iterdir():
+        child.unlink()
+    tracking_dir.rmdir()
+    tracking_dir.symlink_to(outside_dir)
+
+    with pytest.raises(TrackingAppendError) as exc_info:
+        append_tracking_row(target, "medication", _base_row("medication"))
+
+    assert exc_info.value.code == "invalid_tracking_path"
+    assert _read_rows(outside_csv) == []
+
+
+def test_append_tracking_row_rejects_non_canonical_vault_target(tmp_path):
+    target = tmp_path / "not-a-family-health-vault"
+    tracking_dir = target / "04_tracking"
+    tracking_dir.mkdir(parents=True)
+    tracking_dir.joinpath("用药打卡.csv").write_text(
+        ",".join(TRACKING_TABLES["medication"].header) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TrackingAppendError) as exc_info:
+        append_tracking_row(target, "medication", _base_row("medication"))
+
+    assert exc_info.value.code == "invalid_target"
+    assert "canonical family-health vault" in exc_info.value.message
