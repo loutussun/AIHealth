@@ -116,8 +116,10 @@ Errors return a non-zero exit code and stdout JSON:
 Planned error codes:
 
 - `invalid_target`
+- `invalid_arguments`
 - `invalid_table`
 - `invalid_row_json`
+- `internal_error`
 - `row_must_be_object`
 - `missing_field`
 - `unknown_field`

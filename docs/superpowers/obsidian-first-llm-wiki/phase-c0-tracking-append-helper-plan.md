@@ -594,6 +594,11 @@ def test_append_tracking_row_cli_rejects_non_object_json(run_bootstrap, tmp_path
     assert payload["error"]["code"] == "row_must_be_object"
 ```
 
+Final implementation also locks two CLI quality paths:
+
+- missing required CLI arguments return stdout JSON with `error.code == "invalid_arguments"` and empty stderr
+- unexpected internal exceptions return stdout JSON with `error.code == "internal_error"` and empty stderr
+
 - [ ] **Step 4: Run CLI tests and verify RED**
 
 Run:
@@ -639,8 +644,16 @@ if str(ROOT) not in sys.path:
 from family_doctor.tracking_append import TrackingAppendError, append_tracking_row
 
 
+class JsonArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise TrackingAppendError("invalid_arguments", message)
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Append one row to a family-health tracking CSV.")
+    parser = JsonArgumentParser(
+        add_help=False,
+        description="Append one row to a family-health tracking CSV.",
+    )
     parser.add_argument("--target", required=True, type=Path)
     parser.add_argument("--table", required=True)
     parser.add_argument("--row-json", required=True, type=Path)
@@ -671,15 +684,15 @@ def _load_row(row_json: Path) -> dict[str, object]:
 
 
 def main() -> int:
-    args = parse_args()
     try:
+        args = parse_args()
         row = _load_row(args.row_json)
         result = append_tracking_row(args.target, args.table, row)
     except TrackingAppendError as exc:
         _print_json(exc.to_payload())
         return 1
     except Exception as exc:
-        _print_json(_error_payload("write_failed", str(exc)))
+        _print_json(_error_payload("internal_error", str(exc)))
         return 1
 
     _print_json(result)
