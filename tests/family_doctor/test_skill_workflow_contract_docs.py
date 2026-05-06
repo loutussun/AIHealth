@@ -6,6 +6,7 @@ SKILL_DOCS = [
     ROOT / ".codex" / "skills" / "family-doctor" / "SKILL.md",
     ROOT / ".claude" / "skills" / "family-doctor.md",
 ]
+OBSIDIAN_FIRST_DOCS = sorted((ROOT / "docs" / "superpowers" / "obsidian-first-llm-wiki").glob("*.md"))
 
 
 def _read(path: Path) -> str:
@@ -238,4 +239,13 @@ def test_skill_docs_do_not_contradict_route_boundaries() -> None:
     ]
 
     for path in SKILL_DOCS:
+        _assert_markers_absent(_read(path), forbidden_markers, path)
+
+
+def test_obsidian_first_docs_do_not_keep_superseded_tracking_direct_write_contract() -> None:
+    forbidden_markers = [
+        "host LLM may update `04_tracking/*.csv`",
+    ]
+
+    for path in [*SKILL_DOCS, *OBSIDIAN_FIRST_DOCS]:
         _assert_markers_absent(_read(path), forbidden_markers, path)
