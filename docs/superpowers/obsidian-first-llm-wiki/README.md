@@ -8,6 +8,7 @@
 - [phase-a-vault-contract-plan.md](./phase-a-vault-contract-plan.md)：阶段 A 实施计划，聚焦 Obsidian-first vault contract
 - [phase-b-workflow-contract-design.md](./phase-b-workflow-contract-design.md)：阶段 B 设计，聚焦 skill/prompt workflow contract
 - [phase-b-workflow-contract-plan.md](./phase-b-workflow-contract-plan.md)：阶段 B 实施计划，聚焦 skill/prompt workflow contract 落地
+- [phase-c0-tracking-append-helper-design.md](./phase-c0-tracking-append-helper-design.md)：阶段 C.0 设计，聚焦 `04_tracking/*.csv` 只追加 helper
 
 ## 当前主线
 
@@ -17,6 +18,7 @@
 
 - Phase A: complete
 - Phase B: complete
+- Phase C.0: design approved; implementation plan pending
 
 ## 分支与目录约定
 
