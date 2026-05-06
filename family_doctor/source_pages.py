@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from family_doctor.ingest_models import IngestEvent
+from family_doctor.markdown_utils import safe_slug
 from family_doctor.raw_archive import ArchivedArtifact, _assert_within_root, _safe_name
 
 
@@ -56,11 +57,31 @@ def _source_info_lines(
 
 def _structured_fact_lines(source_kind: str) -> list[str]:
     return [
-        "## 提取出的结构化事实",
+        "## 提取事实",
         f"- deterministic_classification: `{source_kind}`",
         "- placeholder: 当前阶段未接入 OCR/LLM，暂不稳定抽取检验值、诊断、药品明细或症状细节。",
         "- placeholder: 为避免误判，此页仅保留确定性分类与来源元数据。",
     ]
+
+
+def _abnormality_lines() -> list[str]:
+    return [
+        "## 异常项",
+        "- placeholder: 当前阶段不自动判断异常；需要 OCR/LLM 或人工核对后再写入。",
+    ]
+
+
+def _affected_wiki_lines(member_id: str | None) -> list[str]:
+    lines = [
+        "## 影响到的 Wiki 页面",
+    ]
+    if member_id is None:
+        lines.append("- 待成员归属确认后再链接成员页、计划页或趋势页。")
+    else:
+        member_slug = safe_slug(member_id)
+        lines.append(f"- `02_wiki/members/{member_slug}.md`")
+        lines.append(f"- `02_wiki/plans/{member_slug}.md`（如该来源触发复查或行动计划）")
+    return lines
 
 
 def _verification_lines(source_kind: str, member_id: str | None) -> list[str]:
@@ -101,6 +122,10 @@ def build_source_page_content(
         *_source_info_lines(event, source_kind, archived_artifacts),
         "",
         *_structured_fact_lines(source_kind),
+        "",
+        *_abnormality_lines(),
+        "",
+        *_affected_wiki_lines(event.member_id),
         "",
         *_verification_lines(source_kind, event.member_id),
         "",

@@ -5,6 +5,13 @@
 ## 日志格式
 
 - 统一格式：`## [YYYY-MM-DD HH:MM] <phase> | <member_id> | <artifact_kind> | <artifact_id>`
+- 稳定前缀：
+  - `[ingest]`
+  - `[query]`
+  - `[report]`
+  - `[reminder]`
+  - `[lint]`
+  - `[manual-review]`
 - 当条目对应 `99_runtime/` 实体时，`artifact_kind` 应直接使用 runtime entity 名称，例如 `reminder_instance`、`review_item`
 - 当条目对应 `99_runtime/` 实体时，`artifact_id` 应使用该实体 `log_identity_field` 指向的字段值
 - 说明行放在标题下面，使用简短句子记录本次动作

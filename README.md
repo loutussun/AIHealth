@@ -2,139 +2,139 @@
 
 一个基于 `LLM Wiki` 方法构建的家庭健康管理项目。
 
-当前仓库的目标，不是做一个单次问答机器人，而是逐步构建一套可持续维护的家庭健康知识系统：
+当前主线只围绕一个对外 skill：
 
-- `family-doctor` 作为唯一外部 skill 入口
-- `family-health/` 作为 canonical 家庭健康 wiki 骨架
-- `scripts/family_doctor/` 提供 bootstrap 和 validation 工具链
-- `docs/superpowers/` 保存设计、计划、交接和恢复文档
+- `family-doctor`
 
-## 当前状态
+产品形态：
 
-当前已完成：
+- `family-health/` 是 Obsidian-first 家庭健康 vault，也是主要产品界面。
+- `family-doctor` 是维护这个 vault 的 LLM wiki 操作员。
+- Python 代码只承担确定性机械工具职责。
 
-- 核心设计文档
-- `Phase 0 foundation`
-- canonical `family-health/` scaffold
-- `bootstrap_vault.py`
-- `validate_phase0.py`
-- Phase 0 自动化测试基线
-- Git / GitHub 基线与 `Phase 0 CI`
-- `Phase 1 ingest MVP`
-- `Phase 2 query / report / reminder` 核心实现
-- `Phase 2 thin CLI`
-- `Phase 2` family_doctor 回归套件
+宿主形态：
 
-当前进行中：
+- `codex/openclaw -> family-doctor -> input_event/output_result`
 
-- `Phase 3` 设计与 planning 准备
+## 当前主交付
 
-当前尚未开始：
+当前本地 `main` 合并后的主交付是 Obsidian-first `family-doctor` skill core：
 
-- OCR、即时通讯接入、调度器接入
-- `Phase 3` 代码实现
-- advanced reminder rules
+- `ingest`
+- `query`
+- `report`
+- `reminder`
+- `scripts/family_doctor/run_skill.py` 统一宿主入口
+- `scripts/family_doctor/append_tracking_row.py` 作为 `04_tracking/*.csv` append-only helper
 
-## 核心目录
+补充说明：
 
-```text
-AIHealth/
-├── docs/superpowers/
-│   ├── specs/
-│   ├── plans/
-│   ├── handoffs/
-│   └── backups/
-├── family-health/
-├── scripts/family_doctor/
-├── tests/family_doctor/
-└── ai-health-vault/   # 外部参考仓，当前主仓已排除版本管理
-```
+- `run_ingest.py`、`run_query.py`、`run_report.py`、`run_reminder.py` 只作为开发/调试入口
+- 当前不把 CLI 描述为产品最终形态
+- Phase 3 trends/writeback 仍是历史候选区，不属于当前主线实现
+
+## 当前不属于主线
+
+以下内容不应写成当前主交付：
+
+- 即时通讯接入
+- 独立 `scheduler / bot`
+- 自动设备同步
+- `visit_brief` route
+- `trend_build` route
+- 未接回 Obsidian-first 设计的 `Phase 3 trends`
 
 ## 必读文档
 
-- 设计总文档：
-  [2026-04-19-family-doctor-skill-design.md](docs/superpowers/specs/2026-04-19-family-doctor-skill-design.md)
-- Agent 执行协作通用约定：
-  [2026-04-21-agent-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-agent-execution-collaboration-agreement.md)
-- 项目执行协作约定：
-  [2026-04-21-project-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-project-execution-collaboration-agreement.md)
-- Worktree 线程切换与清理约定：
-  [2026-04-22-worktree-thread-switching-and-cleanup-agreement.md](docs/superpowers/specs/2026-04-22-worktree-thread-switching-and-cleanup-agreement.md)
-- Phase 3 设计稿：
-  [2026-04-21-family-doctor-phase3-trends-writeback-design.md](docs/superpowers/specs/2026-04-21-family-doctor-phase3-trends-writeback-design.md)
-- Phase 0 实施计划：
-  [2026-04-19-family-doctor-phase0-foundation.md](docs/superpowers/plans/2026-04-19-family-doctor-phase0-foundation.md)
-- 当前交接文档：
-  [2026-04-20-family-doctor-project-handoff.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-handoff.md)
-- Phase 1 完成说明：
-  [2026-04-21-family-doctor-phase1-ingest-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase1-ingest-completion.md)
-- Phase 2 完成说明：
-  [2026-04-21-family-doctor-phase2-query-report-reminder-completion.md](docs/superpowers/handoffs/2026-04-21-family-doctor-phase2-query-report-reminder-completion.md)
-- 当前最新快照：
-  [2026-04-21-family-doctor-project-snapshot-phase2.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot-phase2.md)
-- 之前的 Phase 1 快照：
-  [2026-04-21-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-21-family-doctor-project-snapshot.md)
-- 上一版快照：
-  [2026-04-20-family-doctor-project-snapshot.md](docs/superpowers/handoffs/2026-04-20-family-doctor-project-snapshot.md)
-- 下一阶段 planning：
-  [2026-04-21-family-doctor-phase2-query-report-reminder.md](docs/superpowers/plans/2026-04-21-family-doctor-phase2-query-report-reminder.md)
+以下文档是当前项目状态的真相源，按顺序阅读：
 
-## 本地验证
+1. [2026-04-19-family-doctor-skill-design.md](docs/superpowers/specs/2026-04-19-family-doctor-skill-design.md)
+2. [2026-04-21-project-execution-collaboration-agreement.md](docs/superpowers/specs/2026-04-21-project-execution-collaboration-agreement.md)
+3. [obsidian-first-llm-wiki/README.md](docs/superpowers/obsidian-first-llm-wiki/README.md)
+4. [2026-04-22-family-doctor-skill-realignment.md](docs/superpowers/plans/2026-04-22-family-doctor-skill-realignment.md)
+5. [2026-04-22-family-doctor-skill-realignment-handoff.md](docs/superpowers/handoffs/2026-04-22-family-doctor-skill-realignment-handoff.md)
+6. [2026-04-22-family-doctor-project-snapshot-skill-realignment.md](docs/superpowers/handoffs/2026-04-22-family-doctor-project-snapshot-skill-realignment.md)
 
-### 1. 校验 canonical scaffold
+历史候选参考：
+
+- [2026-04-21-family-doctor-phase3-trends-writeback-design.md](docs/superpowers/specs/2026-04-21-family-doctor-phase3-trends-writeback-design.md)
+- [2026-04-22-worktree-thread-switching-and-cleanup-agreement.md](docs/superpowers/specs/2026-04-22-worktree-thread-switching-and-cleanup-agreement.md)
+
+## Skill 使用
+
+统一入口：
 
 ```bash
-python3 scripts/family_doctor/validate_phase0.py --target /Users/loutussun/Documents/codex/AIHealth/family-health
+python3 /absolute/path/to/AIHealth/scripts/family_doctor/run_skill.py --event /absolute/path/to/event.json
 ```
 
-### 2. 运行当前 family_doctor 回归套件
-
-当前环境默认没有可直接调用的 `pytest` 命令，统一使用：
+`ingest`、`report`、`reminder` 需要 vault root：
 
 ```bash
-PYTHONPATH=. uv run pytest \
-  tests/family_doctor/test_query_pipeline.py \
-  tests/family_doctor/test_query_contract.py \
-  tests/family_doctor/test_report_pipeline.py \
-  tests/family_doctor/test_report_outputs.py \
-  tests/family_doctor/test_reminder_pipeline.py \
-  tests/family_doctor/test_reminder_runtime.py \
-  tests/family_doctor/test_query_cli.py \
-  tests/family_doctor/test_report_cli.py \
-  tests/family_doctor/test_reminder_cli.py \
-  tests/family_doctor/test_run_ingest_cli.py \
-  tests/family_doctor/test_ingest_acceptance.py \
-  tests/family_doctor/test_wiki_updates.py \
-  tests/family_doctor/test_source_pages.py \
-  tests/family_doctor/test_ingest_pipeline.py \
-  tests/family_doctor/test_output_contract.py \
-  tests/family_doctor/test_phase1_regression_smoke.py -q
+python3 /absolute/path/to/AIHealth/scripts/family_doctor/run_skill.py \
+  --event /absolute/path/to/event.json \
+  --target /absolute/path/to/family-health-vault
 ```
 
-## Bootstrap 新 vault
+`query` 不要求 CLI `--target`。
 
-将 canonical `family-health/` scaffold 复制到任意目录：
+## Tracking Append Helper
+
+`daily_tracking_update` 的 append-only tracking rows 应使用 standalone helper：
 
 ```bash
-python3 scripts/family_doctor/bootstrap_vault.py --target /tmp/family-health-demo
-python3 scripts/family_doctor/validate_phase0.py --target /tmp/family-health-demo
+python3 /absolute/path/to/AIHealth/scripts/family_doctor/append_tracking_row.py \
+  --target /absolute/path/to/family-health-vault \
+  --table medication \
+  --row-json /absolute/path/to/row.json
 ```
 
-## GitHub 基线
+该 helper 只用于追加新行，不用于 corrections 或覆盖旧行。
 
-当前仓库已补齐最小基础设施：
+## 当前支持范围
 
-- 根目录 `README.md`
-- Phase 0 CI：
-  - `.github/workflows/phase0-ci.yml`
-- 协作模板：
-  - `.github/ISSUE_TEMPLATE/bug_report.md`
-  - `.github/pull_request_template.md`
+`event_type`：
 
-## 下一步
+- `ingest`
+- `query`
+- `report`
+- `reminder`
+
+`report_kind`：
+
+- `checkup_update`
+- `lab_update`
+- `weekly_health_report`
+- `monthly_health_report`
+
+`reminder_action`：
+
+- `generate`
+- `confirm`
+- `escalate`
+
+## 当前验证
+
+本地 `main` merge 后的验证口径：
+
+```bash
+python3 scripts/family_doctor/validate_phase0.py --target ./family-health
+rm -rf /tmp/family-health-phase-c0-tracking-append
+python3 scripts/family_doctor/bootstrap_vault.py --target /tmp/family-health-phase-c0-tracking-append
+python3 scripts/family_doctor/validate_phase0.py --target /tmp/family-health-phase-c0-tracking-append
+PYTHONPATH=. uv run --with pytest pytest tests/family_doctor -q
+```
+
+最近一次 merge 前验证结果：
+
+- 本地 `family-health/` 的 `validate_phase0` 通过
+- bootstrap 到 `/tmp/family-health-phase-c0-tracking-append` 后再次 `validate_phase0` 通过
+- `tests/family_doctor` 结果：`201 passed`
+
+## 下一步建议
 
 当前最推荐的直接下一步：
 
-1. 基于 `Phase 3` 设计稿生成 implementation plan
-2. 按 `trend page contract -> trend pipeline -> writeback gate` 顺序推进实现
-3. 在趋势层稳定后，再接 `query / report` 的 trends 消费逻辑
+1. 在本地 `main` 上重新跑完整验证。
+2. 如需发布，再 push/PR。
+3. Phase 3 趋势能力后续如需接回，必须在 Obsidian-first 设计下另立计划。

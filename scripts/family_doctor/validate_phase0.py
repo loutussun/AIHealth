@@ -27,10 +27,13 @@ REQUIRED_DIRS = [
     "02_wiki/timelines",
     "02_wiki/trends",
     "02_wiki/plans",
+    "04_tracking",
     "03_outputs/checkup-updates",
+    "03_outputs/lab-updates",
     "03_outputs/weekly-reports",
     "03_outputs/monthly-reports",
     "03_outputs/visit-briefs",
+    "03_outputs/family-messages",
     "03_outputs/reminder-messages",
     "03_outputs/qa-summaries",
     "99_runtime/inbox",
@@ -41,17 +44,40 @@ REQUIRED_DIRS = [
 ]
 
 REQUIRED_MARKDOWN_MARKERS = {
-    "AGENTS.md": ["# family-health Canonical Vault", "## 四类内部能力边界"],
-    "index.md": ["type: index", "## 成员索引", "## 近期输出"],
+    "AGENTS.md": [
+        "# family-health Canonical Vault",
+        "policy: vault-product-surface",
+        "policy: source-grounded-medical-assertions",
+        "policy: tracking-preserve-headers",
+    ],
+    "index.md": ["type: index", "[[家庭健康管理中心]]", "## Tracking CSV"],
     "log.md": ["# 操作日志", "## 日志格式"],
     "00_schema/members.md": ["# 成员注册规则", "## 成员识别护栏"],
     "00_schema/reporting-rules.md": ["# 报告生成规则", "## 输出要求"],
     "00_schema/reminder-rules.md": ["# 提醒生成规则", "## 交付要求"],
+    "家庭健康管理中心.md": [
+        "# 家庭健康管理中心",
+        "type: health-hub",
+        "purpose: 家庭健康管理入口",
+        "[[index",
+        "[[log]]",
+        "02_wiki/members",
+        "04_tracking/体检指标.csv",
+        "## 家庭成员",
+        "## 追踪表格",
+    ],
 }
 
 TEMPLATE_MARKERS = {
-    "member-template.md": ["type: member", "## 基本信息", "## 当前用药"],
-    "source-template.md": ["type: source", "## 来源信息", "## 提取出的结构化事实"],
+    "member-template.md": ["type: member", "## 基本信息", "## 当前用药", "## 来源索引"],
+    "source-template.md": [
+        "type: source",
+        "## 来源信息",
+        "## 提取事实",
+        "## 异常项",
+        "## 影响到的 Wiki 页面",
+        "## 待核实项",
+    ],
     "medication-template.md": ["type: medication", "display_name:", "## 适应证", "## 漏服规则"],
     "condition-template.md": ["type: condition", "display_name:", "## 涉及成员", "## 关键证据"],
     "trend-template.md": ["type: trend", "## 关键指标表", "## 趋势判断"],
@@ -72,6 +98,30 @@ TEMPLATE_MARKERS = {
         "## 提醒内容",
         "## 运行时映射",
     ],
+    "family-message-template.md": [
+        "type: output",
+        "output_kind: family_message",
+        "## 面向对象",
+        "## 可发送消息",
+        "## 依据来源",
+        "## 不确定项",
+    ],
+    "visit-brief-template.md": [
+        "type: output",
+        "output_kind: visit_brief",
+        "## 就医目标",
+        "## 一页纸摘要",
+        "## 建议追问医生的问题",
+        "## 依据来源",
+    ],
+}
+
+EXPECTED_TRACKING_HEADERS = {
+    "04_tracking/体检指标.csv": "member_id,date,item,result,unit,reference_range,status,source_ref,notes",
+    "04_tracking/用药打卡.csv": "member_id,date,time,medication_id,dose,status,source_ref,notes",
+    "04_tracking/饮食记录.csv": "member_id,date,meal,summary,tags,source_ref,notes",
+    "04_tracking/运动记录.csv": "member_id,date,activity,duration_minutes,intensity,source_ref,notes",
+    "04_tracking/睡眠记录.csv": "member_id,date,sleep_start,sleep_end,duration_hours,quality,source_ref,notes",
 }
 
 EXPECTED_REQUIRED_TOP_LEVEL_KEYS = {
@@ -261,6 +311,28 @@ def validate_templates(target: Path) -> list[str]:
         for marker in markers:
             if marker not in content:
                 errors.append(f"Template {filename} missing marker: {marker}")
+
+    return errors
+
+
+def validate_tracking_csvs(target: Path) -> list[str]:
+    errors: list[str] = []
+
+    for relative_path, expected_header in EXPECTED_TRACKING_HEADERS.items():
+        path = target / relative_path
+        if not path.exists():
+            errors.append(f"Missing tracking CSV file: {relative_path}")
+            continue
+        if not path.is_file():
+            errors.append(f"Tracking CSV path is not a file: {relative_path}")
+            continue
+
+        first_line = path.read_text(encoding="utf-8").splitlines()
+        actual_header = first_line[0] if first_line else ""
+        if actual_header != expected_header:
+            errors.append(
+                f"Tracking CSV {relative_path} must start with header: {expected_header}"
+            )
 
     return errors
 
@@ -825,6 +897,7 @@ def validate_phase0(target: Path) -> list[str]:
     errors.extend(validate_directory_topology(target))
     errors.extend(validate_required_markdown_assets(target))
     errors.extend(validate_templates(target))
+    errors.extend(validate_tracking_csvs(target))
 
     event_schema_path = target / "00_schema" / "event-schema.json"
     runtime_entities_path = target / "00_schema" / "runtime-entities.json"
